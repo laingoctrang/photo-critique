@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: photo-critique-app
+  messages:
+    basename: lang/messages
+    encoding: UTF-8
+
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      auto-index-creation: true
+
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      username: ${REDIS_USERNAME:default}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5000
+      jedis:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+          max-wait: 3000ms
+      ssl:
+        enabled: false
+
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    from: ${SMTP_FROM}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        debug: false
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    com.photo_critique_be: INFO
+    org.springframework.data.mongodb.core: INFO
+    org.springframework.data.redis: INFO
+    org.springframework.mail: DEBUG
+
+app:
+  jwt:
+    access:
+      secret: ${JWT_ACCESS_SECRET}
+      expire: ${JWT_ACCESS_EXPIRE:86400000}
+    reset:
+      secret: ${JWT_RESET_SECRET}
+      expire: ${JWT_RESET_EXPIRE:600000}
+
+  otp:
+    destination:
+      default: EMAIL
+    expire-time:
+      default: 300    # 5 minutes for general OTP
+      forgot-password: 900  # 15 minutes for forgot password
+    length: 4
+
+  security:
+    cors:
+      allowed-origins: "http://localhost:5173,http://localhost:8080"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-headers: "*"
+      allow-credentials: true

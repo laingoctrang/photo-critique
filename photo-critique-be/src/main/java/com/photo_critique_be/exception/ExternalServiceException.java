@@ -7,7 +7,7 @@ public class ExternalServiceException extends CustomException {
     public ExternalServiceException(String serviceName, String message) {
         super(
                 String.format("External service error: %s", serviceName),
-                HttpStatus.BAD_GATEWAY,
+                HttpStatus.INTERNAL_SERVER_ERROR,
                 "EXTERNAL_SERVICE_ERROR",
                 message
         );
@@ -35,6 +35,14 @@ public class ExternalServiceException extends CustomException {
                 serviceName,
                 "Request to external service timed out",
                 HttpStatus.GATEWAY_TIMEOUT
+        );
+    }
+
+    public static ExternalServiceException authenticationFailed(String serviceName) {
+        return new ExternalServiceException(
+                serviceName,
+                "Authentication failed",
+                HttpStatus.UNAUTHORIZED
         );
     }
 }

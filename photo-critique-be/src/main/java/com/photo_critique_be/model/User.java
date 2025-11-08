@@ -1,10 +1,9 @@
 package com.photo_critique_be.model;
 
 import com.photo_critique_be.enums.PrivacyType;
+import com.photo_critique_be.enums.Role;
 import com.photo_critique_be.model.embedded.BadgeEarned;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -67,6 +66,12 @@ public class User {
 
     @Field("following_count")
     private Integer followingCount = 0;
+
+    @Field("roles")
+    private List<Role> roles = List.of(Role.USER);
+
+    @Field("enabled")
+    private boolean enabled = true;
 
     @Field("created_at")
     @CreatedDate

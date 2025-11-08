@@ -1,6 +1,6 @@
 package com.photo_critique_be.handler;
 
-import com.photo_critique_be.dto.ErrorResponse;
+import com.photo_critique_be.dto.response.ApiResponse;
 import com.photo_critique_be.exception.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -24,41 +24,37 @@ public class GlobalExceptionHandler {
 
     // Handle custom exceptions
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ErrorResponse> handleCustomException(CustomException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<Object>> handleCustomException(CustomException ex, WebRequest request) {
         log.error("Custom exception: {}", ex.getMessage(), ex);
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(java.time.LocalDateTime.now())
-                .status(ex.getStatus().value())
-                .error(ex.getStatus().getReasonPhrase())
-                .message(ex.getMessage())
-                .errorCode(ex.getErrorCode())
-                .details(ex.getDetails())
-                .path(getRequestPath(request))
-                .build();
+        ApiResponse<Object> response = ApiResponse.error(
+                ex.getStatus(),
+                ex.getMessage(),
+                ex.getErrorCode(),
+                getRequestPath(request)
+        );
 
-        return new ResponseEntity<>(errorResponse, ex.getStatus());
+        return new ResponseEntity<>(response, ex.getStatus());
     }
 
     // Handle resource not found
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
         log.warn("Resource not found: {}", ex.getMessage());
 
-        ErrorResponse errorResponse = ErrorResponse.of(
+        ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.NOT_FOUND,
                 ex.getMessage(),
                 ex.getErrorCode(),
                 getRequestPath(request)
         );
-        errorResponse.setDetails(ex.getDetails());
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     // Handle validation errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(
+    public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex, WebRequest request) {
 
         Map<String, String> fieldErrors = new HashMap<>();
@@ -72,29 +68,26 @@ public class GlobalExceptionHandler {
 
         String errorMessage = "Validation failed for " + ex.getObjectName();
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(java.time.LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(errorMessage)
-                .errorCode("VALIDATION_FAILED")
-                .path(getRequestPath(request))
-                .fieldErrors(fieldErrors)
-                .globalErrors(globalErrors)
-                .build();
+        ApiResponse<Object> response = ApiResponse.validationError(
+                HttpStatus.BAD_REQUEST,
+                errorMessage,
+                fieldErrors,
+                globalErrors,
+                getRequestPath(request)
+        );
 
         log.warn("Validation error: {}", errorMessage);
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     // Handle file size limit exceeded
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ErrorResponse> handleMaxSizeException(
+    public ResponseEntity<ApiResponse<Object>> handleMaxSizeException(
             MaxUploadSizeExceededException ex, WebRequest request) {
 
         String message = "File size exceeds maximum allowed limit";
 
-        ErrorResponse errorResponse = ErrorResponse.of(
+        ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.PAYLOAD_TOO_LARGE,
                 message,
                 "FILE_TOO_LARGE",
@@ -102,83 +95,92 @@ public class GlobalExceptionHandler {
         );
 
         log.warn("File upload size exceeded: {}", ex.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);
+        return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     // Handle authentication exceptions
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+    public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(
             AuthenticationException ex, WebRequest request) {
 
         log.warn("Authentication failed: {}", ex.getMessage());
 
-        ErrorResponse errorResponse = ErrorResponse.of(
+        ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.UNAUTHORIZED,
                 ex.getMessage(),
                 ex.getErrorCode(),
                 getRequestPath(request)
         );
-        errorResponse.setDetails(ex.getDetails());
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
     // Handle authorization exceptions
     @ExceptionHandler(AuthorizationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthorizationException(
+    public ResponseEntity<ApiResponse<Object>> handleAuthorizationException(
             AuthorizationException ex, WebRequest request) {
 
         log.warn("Authorization failed: {}", ex.getMessage());
 
-        ErrorResponse errorResponse = ErrorResponse.of(
+        ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.FORBIDDEN,
                 ex.getMessage(),
                 ex.getErrorCode(),
                 getRequestPath(request)
         );
-        errorResponse.setDetails(ex.getDetails());
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
     // Handle business exceptions
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessException(
+    public ResponseEntity<ApiResponse<Object>> handleBusinessException(
             BusinessException ex, WebRequest request) {
 
         log.warn("Business rule violation: {}", ex.getMessage());
 
-        ErrorResponse errorResponse = ErrorResponse.of(
+        ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 ex.getMessage(),
                 ex.getErrorCode(),
                 getRequestPath(request)
         );
-        errorResponse.setDetails(ex.getDetails());
 
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
+        return new ResponseEntity<>(response, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    // Handle conflict exceptions
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<Object>> handleConflictException(
+            ConflictException ex, WebRequest request) {
+
+        log.warn("Conflict exception: {}", ex.getMessage());
+
+        ApiResponse<Object> response = ApiResponse.error(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                ex.getErrorCode(),
+                getRequestPath(request)
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     // Handle all other exceptions
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGlobalException(
+    public ResponseEntity<ApiResponse<Object>> handleGlobalException(
             Exception ex, WebRequest request) {
 
         log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
 
-        ErrorResponse errorResponse = ErrorResponse.of(
+        ApiResponse<Object> response = ApiResponse.error(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred",
                 "INTERNAL_SERVER_ERROR",
                 getRequestPath(request)
         );
 
-        // Include stack trace only in development
-        if (isDevelopment()) {
-            errorResponse.setTrace(getStackTrace(ex));
-        }
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private String getRequestPath(WebRequest request) {
