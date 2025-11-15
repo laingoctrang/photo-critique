@@ -3,7 +3,7 @@ package com.photo_critique_be.service.impl;
 import com.photo_critique_be.config.security.user.CustomUserDetails;
 import com.photo_critique_be.config.security.user.UserDetailsServiceImpl;
 import com.photo_critique_be.constant.ExternalServiceConstant;
-import com.photo_critique_be.dto.request.*;
+import com.photo_critique_be.dto.request.auth.*;
 import com.photo_critique_be.dto.response.AuthResponse;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.enums.OtpRequestType;

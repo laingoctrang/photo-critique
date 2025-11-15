@@ -77,12 +77,12 @@ public class RedisConfig {
 
             // Test connection
             factory.getConnection().ping();
-            log.info("✅ Successfully connected to Redis at {}:{}", redisHost, redisPort);
+            log.info("Successfully connected to Redis at {}:{}", redisHost, redisPort);
 
             return factory;
 
         } catch (Exception e) {
-            log.error("❌ Failed to connect to Redis: {}:{} - {}", redisHost, redisPort, e.getMessage());
+            log.error("Failed to connect to Redis: {}:{} - {}", redisHost, redisPort, e.getMessage());
             throw new RuntimeException("Redis connection failed: " + e.getMessage(), e);
         }
     }

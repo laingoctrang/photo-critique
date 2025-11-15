@@ -1,10 +1,8 @@
-package com.photo_critique_be.dto.request;
+package com.photo_critique_be.dto.request.auth;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor

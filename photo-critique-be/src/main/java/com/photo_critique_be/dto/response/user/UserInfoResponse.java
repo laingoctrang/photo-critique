@@ -1,8 +1,7 @@
-package com.photo_critique_be.dto.response;
+package com.photo_critique_be.dto.response.user;
 
-import com.photo_critique_be.enums.PrivacyType;
+import com.photo_critique_be.dto.response.badge.BadgeEarnedResponse;
 import com.photo_critique_be.enums.Role;
-import com.photo_critique_be.model.embedded.BadgeEarned;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -23,7 +22,7 @@ public class UserInfoResponse {
     private String privacySetting;
     private Integer xpPoints;
     private Integer level;
-    private List<BadgeEarned> badges;
+    private List<BadgeEarnedResponse> badges;
 
     private List<Role> roles;
     private LocalDateTime createdAt;

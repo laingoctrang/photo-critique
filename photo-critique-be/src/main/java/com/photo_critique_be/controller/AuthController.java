@@ -1,6 +1,6 @@
 package com.photo_critique_be.controller;
 
-import com.photo_critique_be.dto.request.*;
+import com.photo_critique_be.dto.request.auth.*;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.dto.response.ApiResponse;
 import com.photo_critique_be.dto.response.AuthResponse;

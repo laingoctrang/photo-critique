@@ -49,7 +49,27 @@ public enum MessageCode {
     OTP_MAX_ATTEMPTS_EXCEEDED("otp.max.attempts.exceeded"),
 
     // USER
-    USER_NOT_FOUND("user.not.found");
+    USER_GET_ME_SUCCESS("user.get.me.success"),
+    USER_GET_ME_FAILED("user.get.me.failed"),
+    USER_NOT_FOUND("user.not.found"),
+    USER_PROFILE_UPDATED("user.profile.updated"),
+    USER_PROFILE_PRIVATE("user.profile.private"),
+    USER_ALREADY_FOLLOWING("user.already.following"),
+    USER_NOT_FOLLOWING("user.not.following"),
+    USER_CANNOT_FOLLOW_SELF("user.cannot.follow.self"),
+    USER_CANNOT_UNFOLLOW("user.cannot.unfollow"),
+    USER_FOLLOW_REQUEST_PENDING("user.follow.request.pending"),
+    USER_BLOCKED("user.blocked"),
+    USER_FOLLOWED_SUCCESS("user.followed.success"),
+    USER_UNFOLLOWED_SUCCESS("user.unfollowed.success"),
+    FOLLOW_REQUEST_NOT_FOUND("follow.request.not.found"),
+    FOLLOW_REQUEST_ACCEPTED("follow.request.accepted"),
+    FOLLOW_REQUEST_REJECTED("follow.request.rejected"),
+    FOLLOW_REQUEST_ALREADY_PROCESSED("follow.request.already.processed"),
+    USER_ONLINE_STATUS_UPDATED("user.online.status.updated"),
+
+    // BADGE
+    BADGE_NOT_FOUND("badge.not.found");
 
     private final String code;
 

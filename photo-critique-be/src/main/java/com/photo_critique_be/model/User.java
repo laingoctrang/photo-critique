@@ -1,5 +1,6 @@
 package com.photo_critique_be.model;
 
+import com.photo_critique_be.enums.AuthProvider;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.enums.Role;
 import com.photo_critique_be.model.embedded.BadgeEarned;
@@ -59,7 +60,7 @@ public class User {
     private Integer level = 1;
 
     @Field("badges")
-    private List<BadgeEarned> badges = new ArrayList<>();
+        private List<BadgeEarned> badges = new ArrayList<>();
 
     @Field("followers_count")
     private Integer followersCount = 0;
@@ -80,4 +81,10 @@ public class User {
     @Field("updated_at")
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Field("auth_provider")
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Field("provider_id")
+    private String providerId;
 }
