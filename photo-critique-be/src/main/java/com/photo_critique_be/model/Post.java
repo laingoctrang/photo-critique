@@ -1,11 +1,13 @@
 package com.photo_critique_be.model;
 
 import com.photo_critique_be.enums.PrivacyType;
-import com.photo_critique_be.model.embedded.Reaction;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -16,18 +18,23 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "posts")
+@CompoundIndexes({
+    @CompoundIndex(name = "feed_query", def = "{'user_id': 1, 'is_deleted': 1, 'privacy': 1, 'created_at': -1}"),
+    @CompoundIndex(name = "user_posts", def = "{'user_id': 1, 'is_deleted': 1, 'created_at': -1}")
+})
 public class Post {
     @Id
     private String id;
 
     @Field("user_id")
+    @Indexed
     private String userId;
 
     @Field("caption")
     private String caption;
 
-    @Field("image_url")
-    private String imageUrl;
+    @Field("image_urls")
+    private List<String> imageUrls;
 
     @Field("privacy")
     private PrivacyType privacy;
@@ -38,15 +45,29 @@ public class Post {
     @Field("comments_count")
     private Integer commentsCount = 0;
 
-    @Field("reactions")
-    private List<Reaction> reactions;
+    @Field("shares_count")
+    private Integer sharesCount = 0;
 
     @Field("tags")
     private List<String> tags;
 
     @Field("created_at")
+    @Indexed
     private LocalDateTime createdAt;
 
     @Field("updated_at")
     private LocalDateTime updatedAt;
+
+    @Field("original_post_id")
+    private String originalPostId = null;
+
+    @Field("is_deleted")
+    @Indexed
+    private Boolean isDeleted = false;
+
+    @Field("deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Field("deleted_by")
+    private String deletedBy;
 }

@@ -1,8 +1,9 @@
 package com.photo_critique_be.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -12,27 +13,34 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.time.LocalDateTime;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "xp_events")
-public class XPEvent {
+@Document(collection = "xp_configs")
+public class XPConfig {
     @Id
     private String id;
-
-    @Field("user_id")
-    private String userId;
 
     @Field("event_type")
     private String eventType;
 
+    @Field("name")
+    private String name;
+
     @Field("points")
     private Integer points;
 
-    @Field("related_post_id")
-    private String relatedPostId;
+    @Field("description")
+    private String description;
 
-    @Field("related_comment_id")
-    private String relatedCommentId;
+    @Field("is_active")
+    private Boolean isActive;
+
+    @Field("category")
+    private String category;
+
+    @Field("version")
+    private Integer version;
 
     @Field("created_at")
     @CreatedDate

@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,6 +18,18 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "comments")
+@CompoundIndexes({
+    // loading comments by post
+    @CompoundIndex(name = "idx_comments_post_created", def = "{'post_id': 1, 'created_at': 1}"),
+    // loading comments by post with helpful sorting
+    @CompoundIndex(name = "idx_comments_post_helpful", def = "{'post_id': 1, 'is_helpful': -1, 'created_at': 1}"),
+    // loading comments by post with likes sorting
+    @CompoundIndex(name = "idx_comments_post_likes", def = "{'post_id': 1, 'likes_count': -1, 'created_at': 1}"),
+    // comment threads/replies
+    @CompoundIndex(name = "idx_comments_parent", def = "{'parent_comment_id': 1, 'created_at': 1}"),
+    // admin/moderation - find helpful comments across all posts
+    @CompoundIndex(name = "idx_comments_helpful", def = "{'is_helpful': -1, 'created_at': -1}")
+})
 public class Comment {
     @Id
     private String id;

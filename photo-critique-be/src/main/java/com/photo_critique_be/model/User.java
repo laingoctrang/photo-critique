@@ -56,11 +56,11 @@ public class User {
     @Field("xp_points")
     private Integer xpPoints = 0;
 
-    @Field("level")
+    @Field("level") 
     private Integer level = 1;
 
     @Field("badges")
-        private List<BadgeEarned> badges = new ArrayList<>();
+    private List<BadgeEarned> badges = new ArrayList<>();
 
     @Field("followers_count")
     private Integer followersCount = 0;

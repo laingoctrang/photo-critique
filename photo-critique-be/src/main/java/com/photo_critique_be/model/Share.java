@@ -14,25 +14,22 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "xp_events")
-public class XPEvent {
+@Document(collection = "shares")
+public class Share {
     @Id
     private String id;
 
     @Field("user_id")
     private String userId;
 
-    @Field("event_type")
-    private String eventType;
+    @Field("post_id")
+    private String postId;
 
-    @Field("points")
-    private Integer points;
+    @Field("original_post_id")
+    private String originalPostId;
 
-    @Field("related_post_id")
-    private String relatedPostId;
-
-    @Field("related_comment_id")
-    private String relatedCommentId;
+    @Field("caption")
+    private String caption;
 
     @Field("created_at")
     @CreatedDate
@@ -42,3 +39,4 @@ public class XPEvent {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 }
+
