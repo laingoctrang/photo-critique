@@ -1,7 +1,5 @@
 package com.photo_critique_be.dto.request.user;
 
-import com.photo_critique_be.enums.PrivacyType;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data

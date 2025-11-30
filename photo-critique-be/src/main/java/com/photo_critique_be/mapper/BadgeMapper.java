@@ -1,7 +1,7 @@
 package com.photo_critique_be.mapper;
 
 
-import com.photo_critique_be.dto.BadgeResponse;
+import com.photo_critique_be.dto.response.badge.BadgeResponse;
 import com.photo_critique_be.dto.response.badge.BadgeEarnedResponse;
 import com.photo_critique_be.model.Badge;
 import com.photo_critique_be.model.embedded.BadgeEarned;

@@ -1,4 +1,4 @@
-package com.photo_critique_be.dto;
+package com.photo_critique_be.dto.response.badge;
 
 import lombok.Data;
 

@@ -69,7 +69,68 @@ public enum MessageCode {
     USER_ONLINE_STATUS_UPDATED("user.online.status.updated"),
 
     // BADGE
-    BADGE_NOT_FOUND("badge.not.found");
+    BADGE_NOT_FOUND("badge.not.found"),
+
+    // POST
+    POST_CREATED_SUCCESS("post.created.success"),
+    POST_UPDATED_SUCCESS("post.updated.success"),
+    POST_DELETED_SUCCESS("post.deleted.success"),
+    POST_GET_SUCCESS("post.get.success"),
+    POST_NOT_FOUND("post.not.found"),
+    POST_UPDATE_UNAUTHORIZED("post.update.unauthorized"),
+    POST_DELETE_UNAUTHORIZED("post.delete.unauthorized"),
+    POST_VIEW_UNAUTHORIZED("post.view.unauthorized"),
+    POST_FEED_SUCCESS("post.feed.success"),
+    POST_SAVED_SUCCESS("post.saved.success"),
+    POST_UNSAVED_SUCCESS("post.unsaved.success"),
+    POST_SAVED_GET_SUCCESS("post.saved.get.success"),
+    POST_ALREADY_SAVED("post.already.saved"),
+    POST_NOT_SAVED("post.not.saved"),
+    POST_REACTION_ADDED("post.reaction.added"),
+    POST_REACTION_REMOVED("post.reaction.removed"),
+    POST_SHARED_SUCCESS("post.shared.success"),
+
+    POST_SOFT_DELETED_SUCCESS("post.soft.deleted.success"),
+    POST_RESTORED_SUCCESS("post.restored.success"),
+    POST_ALREADY_DELETED("post.already.deleted"),
+    POST_NOT_DELETED("post.not.deleted"),
+    POST_CLEANUP_JOB_STARTED("post.cleanup.job.started"),
+    POST_CLEANUP_JOB_COMPLETED("post.cleanup.job.completed"),
+    POST_DELETED_GET_SUCCESS("post.deleted.get.success"),
+
+    // COMMENT
+    COMMENT_CREATED_SUCCESS("comment.created.success"),
+    COMMENT_UPDATED_SUCCESS("comment.updated.success"),
+    COMMENT_DELETED_SUCCESS("comment.deleted.success"),
+    COMMENT_GET_SUCCESS("comment.get.success"),
+    COMMENT_NOT_FOUND("comment.not.found"),
+    COMMENT_UPDATE_UNAUTHORIZED("comment.update.unauthorized"),
+    COMMENT_DELETE_UNAUTHORIZED("comment.delete.unauthorized"),
+    COMMENT_MARK_HELPFUL_UNAUTHORIZED("comment.mark.helpful.unauthorized"),
+    COMMENT_ALREADY_HELPFUL("comment.already.helpful"),
+    COMMENT_MARKED_HELPFUL("comment.marked.helpful"),
+    COMMENT_LIKED("comment.liked"),
+    COMMENT_UNLIKED("comment.unliked"),
+    COMMENT_AI_NOT_ALLOWED_FOR_REPLY("comment.ai.not.allowed.for.reply"),
+    COMMENT_PARENT_MISMATCH("comment.parent.mismatch"),
+
+    // REACT
+    REACTION_NOT_FOUND("reaction.not.found"),
+    REACTION_ALREADY_EXISTS("reaction.already.exists"),
+    REACTION_ADDED_SUCCESS("reaction.added.success"),
+    REACTION_REMOVED_SUCCESS("reaction.removed.success"),
+
+    // NOTIFICATION
+    NOTIFICATION_NOT_FOUND("notification.not.found"),
+
+    // XP
+    XP_AWARDED_SUCCESS("xp.awarded.success"),
+    XP_AWARDED_FAILED("xp.awarded.failed"),
+    XP_CONFIG_NOT_FOUND("xp.config.not.found"),
+    XP_CONFIG_CREATED_SUCCESS("xp.config.created.success"),
+    XP_CONFIG_UPDATED_SUCCESS("xp.config.updated.success"),
+    XP_CONFIG_DELETED_SUCCESS("xp.config.deleted.success"),
+    XP_CONFIG_RETRIEVED_SUCCESS("xp.config.retrieved.success");
 
     private final String code;
 

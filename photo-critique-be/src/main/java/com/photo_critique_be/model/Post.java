@@ -1,6 +1,7 @@
 package com.photo_critique_be.model;
 
 import com.photo_critique_be.enums.PrivacyType;
+import com.photo_critique_be.model.embedded.ImageInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -34,7 +35,7 @@ public class Post {
     private String caption;
 
     @Field("image_urls")
-    private List<String> imageUrls;
+    private List<ImageInfo> imageUrls;
 
     @Field("privacy")
     private PrivacyType privacy;

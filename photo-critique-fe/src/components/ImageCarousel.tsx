@@ -8,7 +8,6 @@ interface ImageCarouselProps {
   showIndicators?: boolean;
   onIndexChange?: (index: number) => void;
   autoPlayMs?: number | null;
-  aspectRatio?: number | null;
   fitMode?: "contain" | "cover";
 }
 
@@ -19,7 +18,6 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   showIndicators = true,
   onIndexChange,
   autoPlayMs = null,
-  aspectRatio = null,
   fitMode = "contain",
 }) => {
   const [index, setIndex] = useState(() =>
@@ -70,22 +68,35 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full flex items-center justify-center bg-black-50 rounded-4xl ${className}`}
-      // style={
-      //   aspectRatio
-      //     ? { aspectRatio: `${aspectRatio}` }
-      //     : { width: "100%", height: "100%" }
-      // }
+      className={`relative w-full h-full flex items-center justify-center bg-black-50 rounded-3xl ${className}`}
     >
       {/* Image container */}
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden snap-x snap-mandatory scroll-smooth">
+
+        {/* blur */}
+        {fitMode === "contain" && (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${images[index]})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "blur(20px)",
+              transform: "scale(1.1)",
+            }}
+          />
+        )}
+
+        {/* overlay */}
+        {fitMode === "contain" && (
+          <div className="absolute inset-0 bg-black/40" />
+        )}
+        
         <img
           src={images[index]}
           alt={`image-${index}`}
           draggable={false}
-          className={`transition-opacity duration-300 ${
-            isFading ? "opacity-30" : "opacity-100"
-          } ${fitMode === "cover" ? "w-full h-full" : "max-w-full max-h-full"}`}
+          className={`relative z-2 transition-opacity duration-300 ease-in-out  ${fitMode === "cover" ? "w-full h-full" : "max-w-full max-h-full"}`}
           style={{
             objectFit: fitMode,
             backgroundColor:
@@ -103,7 +114,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
               e.stopPropagation();
               prev();
             }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/10 text-white hover:bg-black/30 transition"
+            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/10 text-white hover:bg-black/30 transition z-10"
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
@@ -117,7 +128,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
               e.stopPropagation();
               next();
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/10 text-white hover:bg-black/30 transition"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/10 text-white hover:bg-black/30 transition z-10"
           >
             <ChevronRightIcon className="w-5 h-5" />
           </button>
@@ -125,7 +136,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
         {/* Indicators */}
         {showIndicators && images.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-10">
             {images.map((_, i) => (
               <button
                 key={i}

@@ -7,20 +7,20 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const formatPhoneNumber = (value: string): string => {
-  const numbers = value.replace(/\D/g, "");
-  if (numbers.length <= 3) return numbers;
-  if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-  return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(
-    6,
-    10
-  )}`;
-};
+// const formatPhoneNumber = (value: string): string => {
+//   const numbers = value.replace(/\D/g, "");
+//   if (numbers.length <= 3) return numbers;
+//   if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+//   return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(
+//     6,
+//     10
+//   )}`;
+// };
 
-const formatCurrency = (value: string): string => {
-  const numbers = value.replace(/\D/g, "");
-  return new Intl.NumberFormat("en-US").format(Number(numbers) / 100);
-};
+// const formatCurrency = (value: string): string => {
+//   const numbers = value.replace(/\D/g, "");
+//   return new Intl.NumberFormat("en-US").format(Number(numbers) / 100);
+// };
 
 export interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
