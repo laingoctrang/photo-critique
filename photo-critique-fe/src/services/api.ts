@@ -1,11 +1,8 @@
 import axios from 'axios';
 import type { ApiResponse } from './types';
 
-const url = import.meta.env.VITE_APP_BASE_URL;
-const port = import.meta.env.VITE_APP_PORT;
-
 export const api = axios.create({
-  baseURL: `${url}:${port}/api`,
+  baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api`,
 });
 
 api.interceptors.request.use(
