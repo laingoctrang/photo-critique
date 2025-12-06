@@ -100,10 +100,10 @@ export const DateTimeInput = forwardRef<HTMLInputElement, DateTimeInputProps>(
     );
 
     // Format value for display based on dateTimeType
-    const formatInputValue = (value: string | number | readonly string[] | undefined) => {
-      if (!value) return "";
-      return value;
-    };
+    // const formatInputValue = (value: string | number | readonly string[] | undefined) => {
+    //   if (!value) return "";
+    //   return value;
+    // };
 
     return (
       <div className={cn("flex flex-col space-y-1.5", { "w-full": fullWidth })}>
