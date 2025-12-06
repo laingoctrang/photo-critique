@@ -1,6 +1,7 @@
 package com.photo_critique_be.model;
 
 import com.photo_critique_be.enums.MessageType;
+import com.photo_critique_be.model.embedded.ImageInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,8 +34,8 @@ public class Message {
     @Field("content")
     private String content;
 
-    @Field("image_url")
-    private String imageUrl;
+    @Field("images")
+    private List<ImageInfo> images;
 
     @Field("message_type")
     private MessageType messageType;
