@@ -4,6 +4,7 @@ import com.photo_critique_be.dto.FollowInfo;
 import com.photo_critique_be.dto.request.user.UpdateOnlineStatusRequest;
 import com.photo_critique_be.dto.request.user.UpdateProfileRequest;
 import com.photo_critique_be.dto.response.user.UserListItemResponse;
+import com.photo_critique_be.dto.response.user.UserPostResponse;
 import com.photo_critique_be.dto.response.user.UserProfileResponse;
 import com.photo_critique_be.enums.FollowStatus;
 import com.photo_critique_be.enums.MessageCode;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -47,12 +49,28 @@ public class UserServiceImpl implements UserService {
     private final FollowRepository followRepository;
     private final LanguageService languageService;
 
+    @Override
+    public User getUserById(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+    }
+
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+    }
+
+    @Override
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+    }
 
     @Override
     public UserProfileResponse getCurrentUserProfile() {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserById(currentUserId);
 
         FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
 
@@ -67,8 +85,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserProfileResponse getUserProfileByUsername(String username) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserByUsername(username);
 
         // Check privacy and follow status
         if (!canViewProfile(user, currentUserId)) {
@@ -88,8 +105,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserProfileResponse getUserProfileById(String userId) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserById(userId);
 
         // Check privacy and follow status
         if (!canViewProfile(user, currentUserId)) {
@@ -110,8 +126,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserProfileResponse updateProfile(UpdateProfileRequest request) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserById(currentUserId);
 
         if (request.getBio() != null) {
             user.setBio(request.getBio());
@@ -149,8 +164,7 @@ public class UserServiceImpl implements UserService {
             throw new ConflictException(languageService.getMessage(MessageCode.USER_CANNOT_FOLLOW_SELF));
         }
 
-        User targetUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User targetUser = getUserById(userId);
 
         // Check if already following
         Optional<Follow> existingFollow = followService.existingFollow(currentUserId, userId);
@@ -187,7 +201,7 @@ public class UserServiceImpl implements UserService {
         // Update follower counts if status is ACCEPTED
         if (status == FollowStatus.ACCEPTED) {
             // Only update counts if this is a new follow or status changed from REJECTED
-            if (existingFollow.isPresent() || existingFollow.get().getStatus() == FollowStatus.REJECTED) {
+            if (existingFollow.isPresent() && existingFollow.get().getStatus() == FollowStatus.REJECTED) {
                 targetUser.setFollowersCount(targetUser.getFollowersCount() + 1);
                 User currentUser = userRepository.findById(currentUserId).orElseThrow();
                 currentUser.setFollowingCount(currentUser.getFollowingCount() + 1);
@@ -281,8 +295,7 @@ public class UserServiceImpl implements UserService {
         String currentUserId = SecurityUtil.getCurrentUserId();
 
         // Check if current user can view followers
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserById(userId);
 
         if (!canViewProfile(user, currentUserId)) {
             throw new AuthorizationException(languageService.getMessage(MessageCode.USER_PROFILE_PRIVATE));
@@ -309,8 +322,7 @@ public class UserServiceImpl implements UserService {
         String currentUserId = SecurityUtil.getCurrentUserId();
 
         // Check if current user can view following
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserById(userId);
 
         if (!canViewProfile(user, currentUserId)) {
             throw new AuthorizationException(languageService.getMessage(MessageCode.USER_PROFILE_PRIVATE));
@@ -356,8 +368,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateOnlineStatus(UpdateOnlineStatusRequest request) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+        User user = getUserById(currentUserId);
 
         if (request.getIsOnline() != null) {
             user.setIsOnline(request.getIsOnline());
@@ -367,6 +378,45 @@ public class UserServiceImpl implements UserService {
         }
 
         userRepository.save(user);
+    }
+
+    @Override
+    public UserPostResponse getUserPostById(String userId) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        User user = getUserById(userId);
+
+        // Hidden private infomation
+        if (!canViewProfile(user, currentUserId)) {
+            user.setIsOnline(null);
+            user.setLevel(null);
+            user.setXpPoints(null);
+            user.setFollowersCount(null);
+            user.setFollowingCount(null);
+        }
+
+        FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
+
+        return userMapper.toUserPostResponse(user, followInfo);
+    }
+
+    @Override
+    public Map<String, UserPostResponse> getUsersByUserIds(List<String> userIds, String currentUserId) {
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        user -> {
+                            // Hidden private infomation
+                            if (!canViewProfile(user, currentUserId)) {
+                                user.setIsOnline(null);
+                                user.setLevel(null);
+                                user.setXpPoints(null);
+                                user.setFollowersCount(null);
+                                user.setFollowingCount(null);
+                            }
+                            FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
+                            return userMapper.toUserPostResponse(user, followInfo);
+                        }
+                ));
     }
 
     // Helper methods

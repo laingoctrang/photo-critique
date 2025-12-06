@@ -25,7 +25,7 @@ public class BadgeServiceImpl implements BadgeService {
     @Override
     public BadgeEarnedResponse getBadgeEarned(BadgeEarned badgeEarned) {
         Badge badge = badgeRepository.findById(badgeEarned.getBadgeId())
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.BADGE_NOT_FOUND)));
         return badgeMapper.toBadgeEarnedResponse(badge, badgeEarned);
     }
 

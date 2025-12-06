@@ -3,11 +3,20 @@ package com.photo_critique_be.service;
 import com.photo_critique_be.dto.request.user.UpdateOnlineStatusRequest;
 import com.photo_critique_be.dto.request.user.UpdateProfileRequest;
 import com.photo_critique_be.dto.response.user.UserListItemResponse;
+import com.photo_critique_be.dto.response.user.UserPostResponse;
 import com.photo_critique_be.dto.response.user.UserProfileResponse;
+import com.photo_critique_be.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+import java.util.Map;
+
 public interface UserService {
+    User getUserById(String userId);
+    User getUserByUsername(String username);
+    User getUserByEmail(String email);
+
     UserProfileResponse getCurrentUserProfile();
     
     UserProfileResponse getUserProfileByUsername(String username);
@@ -31,5 +40,9 @@ public interface UserService {
     Page<UserListItemResponse> getFollowRequests(Pageable pageable);
     
     void updateOnlineStatus(UpdateOnlineStatusRequest request);
+
+    UserPostResponse getUserPostById(String userId);
+
+    Map<String, UserPostResponse> getUsersByUserIds(List<String> userIds, String currentUserId);
 }
 

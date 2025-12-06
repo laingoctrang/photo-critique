@@ -33,7 +33,7 @@ public class UserController {
     @GetMapping("/username/{username}")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getUserProfileByUsername(@PathVariable String username) {
         UserProfileResponse response = userService.getUserProfileByUsername(username);
-        return ResponseEntity.ok(ApiResponse.success(response, "User profile retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.USER_GET_ME_SUCCESS)));
     }
 
     @GetMapping("/{userId}")
