@@ -73,7 +73,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: ChartPieIcon,
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
-    path: "/admin-dashboard",
+    path: "/admin",
   },
   {
     id: AppTab.USER_MANAGEMENT,
@@ -81,7 +81,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: UsersIcon,
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
-    path: "/user-management",
+    path: "/admin/user-management",
   },
   {
     id: AppTab.POST_MANAGEMENT,
@@ -89,7 +89,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: DocumentTextIcon,
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
-    path: "/post-management",
+    path: "/admin/post-management",
   },
   {
     id: AppTab.ANALYTICS,
@@ -97,7 +97,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: ChartPieIcon,
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
-    path: "/analytics",
+    path: "/admin/analytics",
   },
   {
     id: AppTab.SYSTEM_SETTINGS,
@@ -105,7 +105,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: Cog6ToothIcon,
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
-    path: "/settings",
+    path: "/admin/settings",
   },
 
   // Moderator tabs
@@ -115,7 +115,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: ShieldCheckIcon,
     category: TabCategory.MODERATOR,
     roles: [UserRole.MODERATOR],
-    path: "/moderator-dashboard",
+    path: "/moderator",
   },
   {
     id: AppTab.POST_REVIEW,
@@ -123,7 +123,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: ClipboardDocumentListIcon,
     category: TabCategory.MODERATOR,
     roles: [UserRole.MODERATOR],
-    path: "/post-review",
+    path: "/moderator/post-review",
   },
   {
     id: AppTab.REPORTS,
@@ -131,6 +131,6 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: FlagIcon,
     category: TabCategory.MODERATOR,
     roles: [UserRole.MODERATOR],
-    path: "/reports",
+    path: "/moderator/reports",
   },
 ];

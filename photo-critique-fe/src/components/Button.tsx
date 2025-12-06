@@ -1,11 +1,18 @@
 import React, { forwardRef, type ButtonHTMLAttributes } from "react";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "danger" | "ghost" | "outline";
   size?: "small" | "medium" | "large";
   isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: React.ComponentType<{ className?: string }>;
+  rightIcon?: React.ComponentType<{ className?: string }>;
   fullWidth?: boolean;
 }
 
@@ -16,68 +23,75 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       size = "medium",
       isLoading = false,
-      leftIcon,
-      rightIcon,
+      leftIcon: LeftIcon,
+      rightIcon: RightIcon,
       fullWidth = false,
-      className = "",
+      className,
       disabled,
       ...props
     },
     ref
   ) => {
-    // Base classes
-    const baseClasses =
-      "inline-flex items-center justify-center gap-2 border-none rounded cursor-pointer font-medium transition-all duration-200 outline-none relative";
-
-    // Variants
-    const variantClasses = {
-      primary: "bg-blue-500 text-white hover:bg-blue-600",
-      secondary: "bg-gray-200 text-gray-700 hover:bg-gray-300",
-      danger: "bg-red-500 text-white hover:bg-red-600",
+    const iconSizeClasses = {
+      small: "w-4 h-4",
+      medium: "w-5 h-5",
+      large: "w-6 h-6",
     };
 
-    // Sizes
-    const sizeClasses = {
-      small: "px-3 py-2 text-sm",
-      medium: "px-4 py-2.5 text-base",
-      large: "px-5 py-3 text-lg",
-    };
+    const isDisabled = disabled || isLoading;
 
-    // State
-    const stateClasses =
-      disabled || isLoading ? "opacity-60 cursor-not-allowed" : "";
-
-    // Full width
-    const widthClass = fullWidth ? "w-full" : "";
-
-    // Combine all classes
-    const buttonClass = `
-      ${baseClasses}
-      ${variantClasses[variant]}
-      ${sizeClasses[size]}
-      ${stateClasses}
-      ${widthClass}
-      ${className}
-    `
-      .trim()
-      .replace(/\s+/g, " ");
+    const baseClasses = cn(
+      "inline-flex items-center justify-center gap-2",
+      "font-medium transition-all duration-200",
+      "outline-none focus:ring-2 focus:ring-offset-2",
+      "disabled:pointer-events-none",
+      {
+        "w-full": fullWidth,
+        // Sizes
+        "px-3 py-1.5 text-sm": size === "small",
+        "px-4 py-2.5 text-base": size === "medium",
+        "px-6 py-3 text-lg": size === "large",
+        // Variants
+        "bg-[#15B8A6] text-white shadow-sm hover:bg-[#13A595] active:bg-[#119284] focus:ring-[#15B8A6] disabled:bg-gray-200 disabled:text-gray-400":
+          variant === "primary",
+        "bg-[#F0FDFA] text-[#0F453E] border border-[#CCFBF1] shadow-sm hover:bg-[#E1F9F3] hover:border-[#99F6E4] active:bg-[#D3F3EC] active:border-[#5EEAD4] focus:ring-[#15B8A6] disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200":
+          variant === "secondary",
+        "bg-red-500 text-white shadow-sm hover:bg-red-600 active:bg-red-700 focus:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400":
+          variant === "danger",
+        "bg-transparent text-gray-700 hover:bg-gray-100 active:bg-gray-200 focus:ring-gray-500 disabled:text-gray-400":
+          variant === "ghost",
+        "bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus:ring-gray-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200":
+          variant === "outline",
+      },
+      "rounded-3xl cursor-pointer"
+    );
 
     return (
       <button
         ref={ref}
-        className={buttonClass}
-        disabled={disabled || isLoading}
+        className={cn(baseClasses, className)}
+        disabled={isDisabled}
         {...props}
       >
-        {isLoading && (
-          <div className="w-5 h-5 border-2 border-transparent border-t-current rounded-full animate-spin" />
+        {isLoading ? (
+          <ArrowPathIcon
+            className={cn(iconSizeClasses[size], "animate-spin")}
+            aria-hidden="true"
+          />
+        ) : LeftIcon ? (
+          <LeftIcon
+            className={cn(iconSizeClasses[size], "shrink-0")}
+            aria-hidden="true"
+          />
+        ) : null}
+        {children && (
+          <span className={isLoading ? "opacity-0" : ""}>{children}</span>
         )}
-        {leftIcon && !isLoading && (
-          <span className="flex items-center">{leftIcon}</span>
-        )}
-        <span className={isLoading ? "invisible" : "visible"}>{children}</span>
-        {rightIcon && !isLoading && (
-          <span className="flex items-center">{rightIcon}</span>
+        {!isLoading && RightIcon && (
+          <RightIcon
+            className={cn(iconSizeClasses[size], "shrink-0")}
+            aria-hidden="true"
+          />
         )}
       </button>
     );
