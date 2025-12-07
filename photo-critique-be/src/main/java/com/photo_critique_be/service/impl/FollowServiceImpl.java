@@ -11,7 +11,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,5 +63,49 @@ public class FollowServiceImpl implements FollowService {
     @Override
     public Page<Follow> getReceivedFollowRequests(String userId, FollowStatus status, Pageable pageable) {
         return followRepository.findByFollowingIdAndStatus(userId, status, pageable);
+    }
+
+    public List<Follow> getFollowingList(String followerId) {
+        return followRepository.findByFollowerIdAndStatus(followerId, FollowStatus.ACCEPTED);
+    }
+
+    public List<String> getFollowingUserIds(String currentUserId) {
+        // list user that current user is following
+        List<Follow> follows = followRepository.findByFollowerIdAndStatus(currentUserId, FollowStatus.ACCEPTED);
+        return follows.stream()
+                .map(Follow::getFollowingId)
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, FollowInfo> getFollowInfoBatch(String currentUserId, List<String> targetUserIds) {
+        if (targetUserIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // get follow from current user to target users
+        List<Follow> followingRelations = followRepository.findByFollowerIdAndFollowingIdIn(currentUserId, targetUserIds);
+        // get follow from target users to current user
+        List<Follow> followerRelations = followRepository.findByFollowingIdAndFollowerIdIn(currentUserId, targetUserIds);
+
+        Map<String, FollowInfo> result = new HashMap<>();
+        for (String targetUserId : targetUserIds) {
+            // is current user following target user
+            boolean isFollowing = followingRelations.stream()
+                    .anyMatch(f -> f.getFollowingId().equals(targetUserId) && f.getStatus() == FollowStatus.ACCEPTED);
+
+            // is target user following current user
+            boolean isFollowedBy = followerRelations.stream()
+                    .anyMatch(f -> f.getFollowerId().equals(targetUserId) && f.getStatus() == FollowStatus.ACCEPTED);
+
+            String status = followingRelations.stream()
+                    .filter(f -> f.getFollowingId().equals(targetUserId))
+                    .map(f -> f.getStatus().name())
+                    .findFirst()
+                    .orElse(null);
+
+            result.put(targetUserId, new FollowInfo(isFollowing, isFollowedBy, status));
+        }
+
+        return result;
     }
 }
