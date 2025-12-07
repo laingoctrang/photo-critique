@@ -3,14 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { CommentSection } from "../../../components/Comment";
 import { postService, type PostResponse } from "../../../services";
 import { showToast } from "../../../utils";
-import { useAuth } from "../../../hooks";
 import { ToastType } from "../../../components";
 import { PostCard } from "../../../features";
 
 export const PostDetail: React.FC = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [post, setPost] = useState<PostResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [commentsCount, setCommentsCount] = useState(0);
@@ -56,8 +54,6 @@ export const PostDetail: React.FC = () => {
   if (!post) {
     return null;
   }
-
-  const isPostAuthor = post.user.id === user?.id;
 
   return (
     <div className="container mx-auto w-full px-6">

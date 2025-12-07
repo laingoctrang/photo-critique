@@ -10,7 +10,6 @@ import {
   StarIcon as StarIconSolid,
 } from "@heroicons/react/24/solid";
 import type { CommentResponse } from "../../services/commentService";
-import { useAuth } from "../../hooks";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -35,7 +34,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   isPostAuthor = false,
   showHelpfulButton = false,
 }) => {
-  const { user } = useAuth();
+
   const [isExpanded, setIsExpanded] = useState(false);
 
   const timeAgo = formatTimeAgo(comment.createdAt);

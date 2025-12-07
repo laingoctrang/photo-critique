@@ -1,6 +1,5 @@
-// components/Reaction/Reaction.tsx
 import React, { useState, useRef, useEffect } from "react";
-import { ReactionType, type ReactionTargetType } from "../../types/enums";
+import { ReactionType } from "../../types/enums";
 import { ReactionDisplay } from "./ReactionDisplay";
 import { ReactionSelector } from "./ReactionSelector";
 
@@ -15,8 +14,7 @@ export interface ReactionStats {
 }
 
 interface ReactionProps {
-  targetId: string; // ID của post/comment/message
-  targetType: ReactionTargetType;
+  targetId: string; // post/comment/message ID
   initialStats?: Partial<ReactionStats>;
   initialUserReaction?: ReactionType | null;
   onReaction: (
@@ -31,7 +29,6 @@ interface ReactionProps {
 
 export const Reaction: React.FC<ReactionProps> = ({
   targetId,
-  targetType,
   initialStats = {},
   initialUserReaction = null,
   onReaction,

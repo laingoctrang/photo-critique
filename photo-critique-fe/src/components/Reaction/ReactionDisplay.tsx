@@ -1,7 +1,6 @@
-// components/Reaction/ReactionDisplay.tsx
 import React from "react";
 import { ReactionType } from "../../types/enums";
-import { HandThumbUpIcon, HeartIcon } from "@heroicons/react/24/outline";
+import { HeartIcon } from "@heroicons/react/24/outline";
 
 interface ReactionDisplayProps {
   type: ReactionType | null;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ReactionTargetType, ReactionType } from "../../types/enums";
+import { ReactionType } from "../../types/enums";
 import { Reaction } from "../../components/Reaction/Reaction";
 import { ContentExpandable, ImageCarousel, ToastType } from "../../components";
 import { showToast } from "../../utils";
@@ -185,7 +185,6 @@ export const PostCard: React.FC<PostCardProps> = ({
             {/* Reaction Button */}
             <Reaction
               targetId={currentPost.id}
-              targetType={ReactionTargetType.POST}
               initialUserReaction={currentPost.userReaction}
               onReaction={handleReaction}
               size="md"
