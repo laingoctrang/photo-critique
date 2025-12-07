@@ -1,7 +1,7 @@
 import { Route } from "react-router-dom";
 import { Layout } from "../layouts/Layout";
 import { RequireAuth } from "../components";
-import { Create, Direct, Explore, Home, Profile, Ranking } from "../pages/user";
+import { Create, Direct, Explore, Home, PostDetail, Profile, Ranking } from "../pages/user";
 
 
 export const UserRoutes = (
@@ -13,6 +13,7 @@ export const UserRoutes = (
       <Route path="direct" element={<Direct />} />
       <Route path="profile" element={<Profile />} />
       <Route path="create" element={<Create />} />
+      <Route path="post/:postId" element={<PostDetail />} />
     </Route>
   </Route>
 );

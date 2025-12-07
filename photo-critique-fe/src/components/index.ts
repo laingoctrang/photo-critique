@@ -7,3 +7,5 @@ export * from './Toast';
 export { RequireAuth, RequireRole} from './Guards';
 export { Header } from './Header';
 export { Sidebar } from './Sidebar';
+export { ContentExpandable } from './ContentExpandable';
+export * from './Comment';
