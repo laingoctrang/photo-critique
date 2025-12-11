@@ -12,7 +12,6 @@ import {
 import type { CommentResponse } from "../../services/commentService";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CommentInput } from "./CommentInput";
 import { Button } from "../";
 
 function cn(...inputs: ClassValue[]) {

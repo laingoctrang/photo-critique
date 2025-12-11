@@ -1,12 +1,6 @@
 import React from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Button } from "./Button";
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 interface ModalProps {
   isOpen: boolean;
