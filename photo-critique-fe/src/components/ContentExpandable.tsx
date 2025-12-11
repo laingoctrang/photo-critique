@@ -20,6 +20,8 @@ export const ContentExpandable: React.FC<ContentExpandableProps> = ({
   const textRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
+  const isInitialMount = useRef(true);
+  const previousExpanded = useRef(false);
 
   // compute line-height safely (fallback to 1.2 * fontSize)
   const getLineHeight = (el: HTMLElement) => {
@@ -51,9 +53,17 @@ export const ContentExpandable: React.FC<ContentExpandableProps> = ({
     });
   }, [text, lines]);
 
-  // Scroll to post when collapsing
+  // Scroll to post when collapsing (only when user explicitly collapses, not on initial mount)
   useEffect(() => {
-    if (!expanded && isOverflowing) {
+    // Skip scroll on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      previousExpanded.current = expanded;
+      return;
+    }
+
+    // Only scroll when transitioning from expanded to collapsed (user clicked "Show less")
+    if (previousExpanded.current && !expanded && isOverflowing) {
       // If we have a scroll target selector, scroll to the post card
       if (scrollTargetSelector && containerRef.current) {
         const postCard = containerRef.current.closest(scrollTargetSelector);
@@ -74,6 +84,8 @@ export const ContentExpandable: React.FC<ContentExpandableProps> = ({
         });
       }
     }
+    
+    previousExpanded.current = expanded;
   }, [expanded, isOverflowing, scrollTargetSelector]);
 
   // Notify parent of expand state change

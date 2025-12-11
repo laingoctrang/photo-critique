@@ -122,6 +122,27 @@ export const commentService = {
     imageUrl: string,
     postId: string
   ): Promise<{ imageUrl: string }> => {
+    // Fake API implementation - simulate image generation with delay
+    // Replace this with real API call when backend is ready
+    const USE_FAKE_API = import.meta.env.VITE_USE_FAKE_GENERATE_API === 'true' || 
+                         !import.meta.env.VITE_APP_BASE_URL;
+    
+    if (USE_FAKE_API) {
+      // Simulate API delay (2-4 seconds)
+      const delay = 2000 + Math.random() * 2000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Generate a fake image URL using a placeholder service
+      // Using picsum.photos for demo purposes
+      const width = 800;
+      const height = 600;
+      const seed = Date.now() + Math.random();
+      const fakeImageUrl = `https://picsum.photos/seed/${seed}/${width}/${height}`;
+      
+      return { imageUrl: fakeImageUrl };
+    }
+    
+    // Real API call
     const response = await api.post<ApiResponse<{ imageUrl: string }>>(
       `/posts/${postId}/comments/${commentId}/generate-image`,
       { prompt, imageUrl }

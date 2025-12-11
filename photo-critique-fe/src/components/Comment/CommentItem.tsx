@@ -12,6 +12,8 @@ import {
 import type { CommentResponse } from "../../services/commentService";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { CommentInput } from "./CommentInput";
+import { Button } from "../";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,6 +26,9 @@ interface CommentItemProps {
   onMarkHelpful?: (commentId: string) => void;
   isPostAuthor?: boolean;
   showHelpfulButton?: boolean;
+  replyingTo?: string | null;
+  onSubmitReply?: (content: string) => Promise<void>;
+  onCancelReply?: () => void;
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({
@@ -33,9 +38,16 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   onMarkHelpful,
   isPostAuthor = false,
   showHelpfulButton = false,
+  replyingTo,
+  onSubmitReply,
+  onCancelReply,
 }) => {
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  
+  const isReplying = replyingTo === comment.id;
 
   const timeAgo = formatTimeAgo(comment.createdAt);
 
@@ -46,6 +58,20 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const handleMarkHelpful = () => {
     if (onMarkHelpful) {
       onMarkHelpful(comment.id);
+    }
+  };
+
+  const handleSubmitReply = async () => {
+    if (!replyContent.trim() || !onSubmitReply || isSubmittingReply) return;
+    
+    setIsSubmittingReply(true);
+    try {
+      await onSubmitReply(replyContent.trim());
+      setReplyContent("");
+    } catch (error) {
+      console.error("Error submitting reply:", error);
+    } finally {
+      setIsSubmittingReply(false);
     }
   };
 
@@ -143,6 +169,42 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             )}
         </div>
 
+        {/* Reply Input */}
+        {isReplying && onSubmitReply && (
+          <div className="mt-3 pl-4 border-l-2 border-gray-200">
+            <div className="space-y-2">
+              <textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Write a reply..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#15B8A6] focus:border-transparent"
+                rows={3}
+                disabled={isSubmittingReply}
+              />
+              <div className="flex gap-2 justify-end">
+                {onCancelReply && (
+                  <Button
+                    variant="outline"
+                    onClick={onCancelReply}
+                    disabled={isSubmittingReply}
+                    className="shrink-0"
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  onClick={handleSubmitReply}
+                  disabled={!replyContent.trim() || isSubmittingReply}
+                  isLoading={isSubmittingReply}
+                  className="shrink-0"
+                >
+                  Post Reply
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-3">
@@ -166,6 +228,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                     onReply={onReply}
                     isPostAuthor={isPostAuthor}
                     showHelpfulButton={showHelpfulButton}
+                    replyingTo={replyingTo}
+                    onSubmitReply={onSubmitReply}
+                    onCancelReply={onCancelReply}
                   />
                 ))}
                 {isExpanded && (

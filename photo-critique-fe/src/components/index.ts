@@ -8,4 +8,8 @@ export { RequireAuth, RequireRole} from './Guards';
 export { Header } from './Header';
 export { Sidebar } from './Sidebar';
 export { ContentExpandable } from './ContentExpandable';
+export { Modal } from './Modal';
 export * from './Comment';
+export * from './FileUpload';
+export * from './TagInput';
+export * from './PreviewModal';

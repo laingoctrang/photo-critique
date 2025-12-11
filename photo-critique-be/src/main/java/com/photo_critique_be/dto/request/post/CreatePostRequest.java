@@ -2,7 +2,7 @@ package com.photo_critique_be.dto.request.post;
 
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.model.embedded.ImageInfo;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 public class CreatePostRequest {
-    @NotBlank(message = "Image is required")
+    @NotEmpty(message = "At least one image is required")
     private List<ImageInfo> imageUrls;
 
     private String caption;

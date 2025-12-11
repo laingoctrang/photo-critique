@@ -49,6 +49,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [mainInputGeneratedImage, setMainInputGeneratedImage] = useState<string | null>(null);
 
   const isPostAuthor = postAuthorId === user?.id;
 
@@ -82,16 +84,56 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     }
   };
 
-  const handleSubmitComment = async (content: string, selectedImageUrl?: string) => {
+  const handleSubmitComment = async (content: string, selectedImageUrl?: string, parentCommentId?: string | null) => {
     try {
+      // If posting and there's a generated image, clear it (user confirmed cancellation)
+      if (!parentCommentId && mainInputGeneratedImage) {
+        setMainInputGeneratedImage(null);
+      }
+
       const data: CreateCommentRequest = {
         postId,
         content,
         ...(selectedImageUrl && { selectedImageUrl }),
+        ...(parentCommentId && { parentCommentId }),
       };
       
       const newComment = await commentService.createComment(data);
-      setComments((prev) => [newComment, ...prev]);
+      
+      if (parentCommentId) {
+        // Add reply to parent comment
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === parentCommentId) {
+              return {
+                ...c,
+                replies: [...(c.replies || []), newComment],
+              };
+            }
+            // Also check nested replies
+            const updateReplies = (comment: CommentResponse): CommentResponse => {
+              if (comment.id === parentCommentId) {
+                return {
+                  ...comment,
+                  replies: [...(comment.replies || []), newComment],
+                };
+              }
+              if (comment.replies) {
+                return {
+                  ...comment,
+                  replies: comment.replies.map(updateReplies),
+                };
+              }
+              return comment;
+            };
+            return updateReplies(c);
+          })
+        );
+      } else {
+        // Add as top-level comment
+        setComments((prev) => [newComment, ...prev]);
+      }
+      
       setCommentsCount((prev) => prev + 1);
       onCommentCountChange?.(commentsCount + 1);
       onCommentAdded?.();
@@ -113,6 +155,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       
       const newComment = await commentService.createComment(data);
       setIsGenerating(newComment.id);
+      setMainInputGeneratedImage(null); // Reset before generating
 
       // Then generate the image
       try {
@@ -123,6 +166,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           postId
         );
 
+        // Store generated image URL for the input preview
+        setMainInputGeneratedImage(result.imageUrl);
+
         // Update comment with generated image
         setComments((prev) =>
           prev.map((c) =>
@@ -131,8 +177,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               : c
           )
         );
+        setCommentsCount((prev) => prev + 1);
+        onCommentCountChange?.(commentsCount + 1);
+        onCommentAdded?.();
         showToast(ToastType.SUCCESS, "Image generated successfully!");
       } catch (genError: any) {
+        // If generation fails, remove the comment that was created
+        setComments((prev) => prev.filter((c) => c.id !== newComment.id));
         showToast(
           ToastType.ERROR,
           genError.message || "Failed to generate image"
@@ -144,6 +195,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       setIsGenerating(null);
       showToast(ToastType.ERROR, error.message || "Failed to create comment");
       throw error;
+    }
+  };
+
+  const handleReply = (comment: CommentResponse) => {
+    setReplyingTo(comment.id);
+  };
+
+  const handleSubmitReply = async (content: string) => {
+    if (!replyingTo) return;
+    try {
+      await handleSubmitComment(content, undefined, replyingTo);
+      setReplyingTo(null);
+    } catch (error) {
+      // Error already handled in handleSubmitComment
     }
   };
 
@@ -266,13 +331,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       {/* Comment Input */}
       <div className="p-4 border-b border-gray-200">
         <CommentInput
-          onSubmit={handleSubmitComment}
+          onSubmit={(content, selectedImageUrl) => handleSubmitComment(content, selectedImageUrl, null)}
           onGenerate={
             imageUrls.length > 0 ? handleGenerateImage : undefined
           }
           imageUrls={imageUrls}
           isGenerating={!!isGenerating}
           placeholder="Generate an edit, e.g."
+          generatedImageUrl={mainInputGeneratedImage}
+          onGeneratedImageChange={setMainInputGeneratedImage}
         />
       </div>
 
@@ -292,9 +359,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               key={comment.id}
               comment={comment}
               onLike={handleLikeComment}
+              onReply={handleReply}
               onMarkHelpful={handleMarkHelpful}
               isPostAuthor={isPostAuthor}
               showHelpfulButton={isPostAuthor}
+              replyingTo={replyingTo}
+              onSubmitReply={handleSubmitReply}
+              onCancelReply={() => setReplyingTo(null)}
             />
           ))
         )}

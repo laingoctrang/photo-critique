@@ -139,11 +139,11 @@ export const Banner = () => {
       <div
         role="region"
         aria-label="Welcome banner"
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-white via-indigo-50 to-rose-50 border border-gray-100 shadow-lg p-5 sm:p-6 md:p-8 transition-opacity duration-300 ease-out"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-white via-indigo-50 to-rose-50 border border-gray-100 shadow-lg p-5 sm:p-6 md:p-8 transition-opacity duration-300 ease-out"
       >
         <div className="flex items-start sm:items-center gap-4">
           {/* Icon */}
-          <div className="flex-shrink-0 p-2 rounded-lg bg-white/70 border shadow-sm">
+          <div className="flex-shrink-0 p-2 rounded-xl bg-white/70 border border-gray-200 shadow-sm">
             <svg className="w-9 h-9 text-indigo-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M12 2l3 7h7l-5.5 4 3 7L12 16l-7.5 4 3-7L2 9h7z" />
             </svg>
@@ -165,7 +165,7 @@ export const Banner = () => {
             <button
               onClick={onNext}
               type="button"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow transition-colors"
               aria-label="Show another message"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
@@ -178,7 +178,7 @@ export const Banner = () => {
               onClick={onClose}
               type="button"
               aria-label="Close banner"
-              className="text-sm text-gray-500 hover:text-gray-700 p-2 rounded-md"
+              className="text-sm text-gray-500 hover:text-gray-700 p-2 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
                 <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

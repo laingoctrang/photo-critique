@@ -47,7 +47,17 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         ops.add(Aggregation.limit(limit));
 
         // Lookup user info
-        ops.add(Aggregation.lookup("users", "user_id", "_id", "userInfo"));
+        String lookupUser = String.format(
+            "{ $lookup: { " +
+                "from: 'users', " +
+                "let: { uid: '$user_id' }, " +
+                "pipeline: [ " +
+                    "{ $match: { $expr: { $eq: [{ $toString: '$_id' }, { $toString: '$$uid' }] } } } " +
+                "], " +
+                "as: 'userInfo' " +
+            "} }"
+        );
+        ops.add(context -> Document.parse(lookupUser));
         ops.add(Aggregation.unwind("userInfo", true));
 
         // Lookup follow relationship where currentUser -> postUser
