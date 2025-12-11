@@ -67,8 +67,10 @@ export const postService = {
         return response.data.data;
     },
 
-    getFeed: async (): Promise<PostListItemResponse[]> => {
-        const response = await api.get<ApiResponse<PostListItemResponse[]>>('/posts/feed');
+    getFeed: async (page: number = 0, size: number = 20): Promise<PostListItemResponse[]> => {
+        const response = await api.get<ApiResponse<PostListItemResponse[]>>('/posts/feed', {
+            params: { page, size }
+        });
         return response.data.data;
     },
 
