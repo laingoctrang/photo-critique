@@ -30,6 +30,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -243,21 +244,31 @@ public class PostServiceImpl implements PostService {
             throw new AuthorizationException(languageService.getMessage(MessageCode.POST_VIEW_UNAUTHORIZED));
         }
 
-        Reaction oldReaction = reactionRepository.findByUserIdAndTargetIdAndTargetType(currentUserId, postId, ReactionTargetType.POST)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.REACTION_NOT_FOUND)));
-        reactionRepository.delete(oldReaction);
+        // Check if user already has a reaction
+        Optional<Reaction> oldReactionOpt = reactionRepository.findByUserIdAndTargetIdAndTargetType(currentUserId, postId, ReactionTargetType.POST);
 
-        // Add new reaction
+        // If old reaction exists, delete it (to allow changing reaction type)
+        if (oldReactionOpt.isPresent()) {
+            Reaction oldReaction = oldReactionOpt.get();
+            // If same reaction type, no need to update
+            if (oldReaction.getReactionType() == request.getReactionType()) {
+                return; // Already has the same reaction, no need to update
+            }
+            reactionRepository.delete(oldReaction);
+        }
+
+        // Add new reaction (or update if same type was already handled above)
         Reaction reaction = new Reaction();
         reaction.setUserId(currentUserId);
         reaction.setTargetId(postId);
+        reaction.setTargetType(ReactionTargetType.POST);
         reaction.setReactionType(request.getReactionType());
 
         reactionRepository.save(reaction);
         updatePostLikesCount(postId);
 
-        // Notify post owner (if not own post)
-        if (!post.getUserId().equals(currentUserId)) {
+        // Notify post owner (if not own post and this is a new reaction)
+        if (!post.getUserId().equals(currentUserId) && oldReactionOpt.isEmpty()) {
             User currentUser = userService.getUserById(currentUserId);
             String message = String.format("%s reacted to your post", currentUser.getUsername());
             notificationService.createNotification(
@@ -433,7 +444,12 @@ public class PostServiceImpl implements PostService {
     @Override
     public void updatePostLikesCount(String postId) {
         long likesCount = reactionRepository.countByTargetIdAndTargetType(postId, ReactionTargetType.POST);
-        postRepository.updateLikesCount(postId, likesCount);
+        
+        // Update likes count using MongoTemplate
+        Query query = new Query(Criteria.where("_id").is(postId));
+        Update update = new Update();
+        update.set("likes_count", (int) likesCount);
+        mongoTemplate.updateFirst(query, update, Post.class);
     }
 
     // Helper methods

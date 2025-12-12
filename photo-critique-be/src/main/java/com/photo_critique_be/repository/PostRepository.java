@@ -72,8 +72,5 @@ public interface PostRepository extends MongoRepository<Post, String>, PostRepos
         """,
             count = true)
     long countFeedPosts(List<String> userIds, List<PrivacyType> privacyTypes);
-
-    @Query("UPDATE posts SET likes_count = ?2 WHERE id = ?1")
-    void updateLikesCount(String postId, long likesCount);
 }
 
