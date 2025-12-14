@@ -164,9 +164,11 @@ public class AuthServiceIml implements AuthService {
 
     public void resendOtp(ResendOtpRequest request) {
         String email = request.getEmail();
-         if (!userRepository.existsByEmail(email)) {
-             throw new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND));
-         }
+        if (request.getOtpRequestType().equals(OtpRequestType.FORGOT_PASSWORD.name())) {
+            if (!userRepository.existsByEmail(email)) {
+                throw new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND));
+            }
+        }
 
          boolean isSentOtp = otpService.resendOtp(
                  email,
