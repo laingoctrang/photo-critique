@@ -33,10 +33,18 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
         List<AggregationOperation> ops = new ArrayList<>();
 
-        // Match user list + privacy + not deleted
-        Criteria matchCriteria = Criteria.where("user_id").in(userIds)
-            .and("privacy").in(privacyValues)
-            .and("is_deleted").ne(true);
+        // Match criteria:
+        // 1. Posts from users that current user follows (with allowed privacy: PUBLIC, FOLLOWER_ONLY)
+        // 2. OR all PUBLIC posts from any user (to show public posts from users not followed)
+        // 3. Exclude deleted posts
+        Criteria matchCriteria = new Criteria().and("is_deleted").ne(true)
+            .orOperator(
+                // Posts from followed users (or self) with allowed privacy
+                Criteria.where("user_id").in(userIds)
+                    .and("privacy").in(privacyValues),
+                // All PUBLIC posts from any user (including users not followed)
+                Criteria.where("privacy").is("PUBLIC")
+            );
         ops.add(Aggregation.match(matchCriteria));
 
         // Sort newest first
