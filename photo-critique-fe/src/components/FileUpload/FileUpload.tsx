@@ -6,6 +6,7 @@ import {
 import { Button } from "../Button";
 import { FileUploadItem, type FileUploadItemData } from "./FileUploadItem";
 import { uploadService } from "../../services/uploadService";
+import { moderationService } from "../../services/moderationService";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -17,6 +18,7 @@ interface FileUploadProps {
   files: FileUploadItemData[];
   onFilesChange: (files: FileUploadItemData[]) => void;
   onPreview?: (item: FileUploadItemData) => void;
+  onViolationClick?: (item: FileUploadItemData) => void;
   maxFiles?: number;
   acceptedTypes?: string;
   maxSize?: number; // in bytes
@@ -27,9 +29,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   files,
   onFilesChange,
   onPreview,
+  onViolationClick,
   maxFiles = 10,
-  acceptedTypes = "image/*,video/*",
-  maxSize = 50 * 1024 * 1024, // 50MB default
+  acceptedTypes = "image/*",
+  maxSize = 10 * 1024 * 1024, // 10MB default
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<FileUploadItemData[]>(files);
@@ -116,6 +119,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           );
           filesRef.current = updatedFiles;
           onFilesChange(updatedFiles);
+
+          // Check moderation for images
+          if (imageInfo.contentType.startsWith("image/") && imageInfo.url) {
+            try {
+              const moderationResponse = await moderationService.moderateBatch([
+                imageInfo.url,
+              ]);
+              const moderationResult = moderationResponse.results[0];
+
+              // Update file with moderation result
+              currentFiles = filesRef.current;
+              updatedFiles = currentFiles.map((f) =>
+                f.id === item.id
+                  ? {
+                      ...f,
+                      moderationResult: moderationResult,
+                    }
+                  : f
+              );
+              filesRef.current = updatedFiles;
+              onFilesChange(updatedFiles);
+            } catch (error) {
+              // If moderation fails, log but don't block upload
+              console.error("Moderation check failed:", error);
+            }
+          }
           
         } catch (error: unknown) {
           // Update with error status
@@ -250,7 +279,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             Choose a file or drag & drop it here
           </p>
           <p className="text-sm text-gray-500 mb-4">
-            JPEG, PNG, PDF, and MP4 formats, up to {maxSize / 1024 / 1024} MB.
+            JPEG, PNG formats, up to {maxSize / 1024 / 1024} MB.
           </p>
           <Button
             type="button"
@@ -294,6 +323,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 onDelete={handleDelete}
                 onTitleChange={handleTitleChange}
                 onPreview={onPreview}
+                onViolationClick={onViolationClick}
                 isDragging={draggedIndex === index}
               />
             </div>

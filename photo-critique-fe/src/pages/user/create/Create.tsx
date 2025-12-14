@@ -5,9 +5,12 @@ import {
   LinkIcon,
   LockClosedIcon,
   EyeIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Button, FileUpload, TagInput, PreviewModal, type FileUploadItemData } from "../../../components";
 import { postService } from "../../../services/postService";
+import { moderationService } from "../../../services/moderationService";
 import { PrivacyType } from "../../../types/enums";
 import { showToast } from "../../../utils";
 import { ToastType } from "../../../components";
@@ -42,6 +45,8 @@ export const Create = () => {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [showViolationModal, setShowViolationModal] = useState(false);
+  const [showCaptionViolationModal, setShowCaptionViolationModal] = useState(false);
 
   const handleFilesChange = (newFiles: FileUploadItemData[]) => {
     setFiles(newFiles);
@@ -68,6 +73,44 @@ export const Create = () => {
     if (uploadingFiles.length > 0 && !isDraft) {
       showToast(ToastType.ERROR, "Please wait for all files to finish uploading");
       return;
+    }
+
+    // Check if all completed images have been moderated
+    const completedImageFiles = completedFiles.filter(
+      (f) => f.imageInfo?.contentType.startsWith("image/")
+    );
+    const unmoderatedFiles = completedImageFiles.filter(
+      (f) => !f.moderationResult
+    );
+    if (unmoderatedFiles.length > 0 && !isDraft) {
+      showToast(
+        ToastType.ERROR,
+        "Please wait for all images to be checked for content policy compliance"
+      );
+      return;
+    }
+
+    // Check moderation results - block if any image violates policy
+    const violatingFiles = files.filter(
+      (f) => f.moderationResult && !f.moderationResult.allowed
+    );
+    if (violatingFiles.length > 0 && !isDraft) {
+      setShowViolationModal(true);
+      return;
+    }
+
+    // Check caption moderation if not draft
+    if (!isDraft && caption.trim()) {
+      try {
+        const captionModeration = await moderationService.moderateText(caption.trim());
+        if (!captionModeration.allowed) {
+          setShowCaptionViolationModal(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Caption moderation check failed:", error);
+        // Continue if moderation check fails
+      }
     }
 
     try {
@@ -143,9 +186,10 @@ export const Create = () => {
                 files={files}
                 onFilesChange={handleFilesChange}
                 onPreview={handlePreview}
+                onViolationClick={() => setShowViolationModal(true)}
                 maxFiles={10}
-                acceptedTypes="image/*,video/*"
-                maxSize={50 * 1024 * 1024} // 50MB
+                acceptedTypes="image/*"
+                maxSize={10 * 1024 * 1024} // 10MB
               />
             </div>
           </div>
@@ -216,7 +260,7 @@ export const Create = () => {
               <Button
                 variant="outline"
                 onClick={() => handleSubmit(true)}
-                disabled={isSubmitting || isSavingDraft}
+                disabled={isSubmitting || isSavingDraft || files.length === 0}
                 isLoading={isSavingDraft}
                 fullWidth
               >
@@ -225,7 +269,18 @@ export const Create = () => {
               <Button
                 variant="primary"
                 onClick={() => handleSubmit(false)}
-                disabled={isSubmitting || isSavingDraft}
+                disabled={
+                  isSubmitting ||
+                  isSavingDraft ||
+                  files.length === 0 ||
+                  files.some(
+                    (f) =>
+                      f.status === "completed" &&
+                      f.imageInfo?.contentType.startsWith("image/") &&
+                      (!f.moderationResult ||
+                        !f.moderationResult.allowed)
+                  )
+                }
                 isLoading={isSubmitting}
                 fullWidth
                 leftIcon={EyeIcon}
@@ -245,6 +300,145 @@ export const Create = () => {
         currentIndex={previewIndex}
         onIndexChange={setPreviewIndex}
       />
+
+      {/* Violation Modal */}
+      {showViolationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowViolationModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden z-10 animate-in fade-in zoom-in duration-200">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-5">
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <ExclamationTriangleIcon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    Content Policy Violation
+                  </h3>
+                  
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6">
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 mb-4">
+                <p className="text-gray-500 leading-relaxed">
+                  Your image violates our content policy. Sensitive or violent images are not allowed. Please remove any violating images before posting.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <p className="text-sm text-gray-600 mb-2 font-medium">
+                  Content Guidelines:
+                </p>
+                <ul className="text-sm text-gray-700 space-y-1.5 list-disc list-inside">
+                  <li>Do not post sensitive or violent images</li>
+                  <li>Do not post images with violent tendencies</li>
+                  <li>Remove any images flagged with warnings</li>
+                  <li>Only images that pass moderation can be published</li>
+                </ul>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-center">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => setShowViolationModal(false)}
+                  className="px-6"
+                >
+                  I Understand
+                </Button>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowViolationModal(false)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Caption Violation Modal */}
+      {showCaptionViolationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowCaptionViolationModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden z-10 animate-in fade-in zoom-in duration-200">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-5">
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <ExclamationTriangleIcon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    Content Policy Violation
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6">
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 mb-4">
+                <p className="text-gray-500 leading-relaxed">
+                  Your caption violates our content policy. Hate speech and offensive language are not allowed. Please revise your caption before posting.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <p className="text-sm text-gray-600 mb-2 font-medium">
+                  Content Guidelines:
+                </p>
+                <ul className="text-sm text-gray-700 space-y-1.5 list-disc list-inside">
+                  <li>Do not use hate speech</li>
+                  <li>Do not use offensive language</li>
+                  <li>Keep your content respectful and appropriate</li>
+                  <li>Only content that passes moderation can be published</li>
+                </ul>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-center">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => setShowCaptionViolationModal(false)}
+                  className="px-6"
+                >
+                  I Understand
+                </Button>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowCaptionViolationModal(false)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
