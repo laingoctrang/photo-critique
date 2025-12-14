@@ -12,7 +12,7 @@ import {
 import type { CommentResponse } from "../../services/commentService";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Button } from "../";
+import { Button } from "../common/Button";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

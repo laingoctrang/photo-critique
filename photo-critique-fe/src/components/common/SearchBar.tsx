@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { Input } from "./Input";
 
 interface SearchBarProps<T> {
   placeholder?: string;
@@ -45,13 +46,14 @@ export function SearchBar<T>({
     <div className={`relative w-full ${className}`}>
       {/* Input */}
       <div className="relative">
-        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
+        <Input
           type="text"
+          variant="outline"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-11 pr-4 py-2 rounded-xl border border-gray-300 bg-white text-sm text-gray-700 transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-400"
+          leftIcon={MagnifyingGlassIcon}
+          className="h-10 text-sm"
         />
       </div>
 

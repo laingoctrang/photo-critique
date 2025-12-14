@@ -3,7 +3,7 @@ import {
   CloudArrowUpIcon,
   PhotoIcon,
 } from "@heroicons/react/24/outline";
-import { Button } from "../Button";
+import { Button } from "../common/Button";
 import { FileUploadItem, type FileUploadItemData } from "./FileUploadItem";
 import { uploadService } from "../../services/uploadService";
 import { type ClassValue, clsx } from "clsx";

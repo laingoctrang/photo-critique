@@ -126,7 +126,7 @@ export const Reaction: React.FC<ReactionProps> = ({
       onMouseLeave={handleMouseLeave}
     >
       {/* Reaction Button */}
-      <div className="relative z-500">
+      <div className="relative z-10">
         <button
           type="button"
           onMouseEnter={() => setIsSelectorOpen(!isSelectorOpen)}

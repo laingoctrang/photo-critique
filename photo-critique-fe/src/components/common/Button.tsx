@@ -48,13 +48,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       {
         "w-full": fullWidth,
         // Sizes
-        "px-3 py-1.5 text-sm": size === "small",
+        "px-4 py-2 text-sm": size === "small",
         "px-4 py-2.5 text-base": size === "medium",
         "px-6 py-3 text-lg": size === "large",
         // Variants
         "bg-[#15B8A6] text-white shadow-sm hover:bg-[#13A595] active:bg-[#119284] focus:ring-[#15B8A6] disabled:bg-gray-200 disabled:text-gray-400":
           variant === "primary",
-        "bg-[#F0FDFA] text-[#0F453E] border border-[#CCFBF1] shadow-sm hover:bg-[#E1F9F3] hover:border-[#99F6E4] active:bg-[#D3F3EC] active:border-[#5EEAD4] focus:ring-[#15B8A6] disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200":
+        "bg-white text-[#13A595] border border-[#13A595] shadow-sm hover:bg-[#F0FDFA] hover:border-[#119284] active:bg-[#E1F9F3] active:border-[#0F8A7A] focus:ring-[#15B8A6] disabled:bg-white disabled:text-gray-400 disabled:border-gray-300":
           variant === "secondary",
         "bg-red-500 text-white shadow-sm hover:bg-red-600 active:bg-red-700 focus:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400":
           variant === "danger",
@@ -85,7 +85,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           />
         ) : null}
         {children && (
-          <span className={isLoading ? "opacity-0" : ""}>{children}</span>
+          <span>{children}</span>
         )}
         {!isLoading && RightIcon && (
           <RightIcon

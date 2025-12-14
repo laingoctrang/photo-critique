@@ -50,18 +50,18 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 z-10">
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <XMarkIcon className="w-6 h-6" />
         </button>
 
         {/* Content */}
         <div className="pr-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{title}</h3>
           <p className="text-gray-600 mb-6">{message}</p>
         </div>
 

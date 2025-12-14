@@ -1,7 +1,8 @@
 import { Route } from "react-router-dom";
 import { Layout } from "../layouts/Layout";
 import { RequireAuth } from "../components";
-import { Create, Direct, Explore, Home, PostDetail, Profile, Ranking } from "../pages/user";
+import { Create, Direct, Explore, Home, Profile, Ranking } from "../pages/user";
+import { PostDetail } from "../features";
 
 
 export const UserRoutes = (

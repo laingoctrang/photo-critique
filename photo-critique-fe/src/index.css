@@ -13,3 +13,19 @@ body {
   border: none;
   outline: none;
 }
+
+.hidden-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hidden-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hidden-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.hidden-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: transparent;
+}
+.hidden-scrollbar::-webkit-scrollbar-thumb:active {
+  background: transparent;
+}
