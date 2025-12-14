@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { formatTimeAgo } from "../../utils/timeUtils";
+import { formatTimeAgo } from "../../utils";
 import {
   HandThumbUpIcon,
   ChatBubbleLeftRightIcon,
@@ -9,7 +9,7 @@ import {
   HandThumbUpIcon as HandThumbUpIconSolid,
   StarIcon as StarIconSolid,
 } from "@heroicons/react/24/solid";
-import type { CommentResponse } from "../../services/commentService";
+import { type CommentResponse } from "../../services";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Button } from "../common/Button";

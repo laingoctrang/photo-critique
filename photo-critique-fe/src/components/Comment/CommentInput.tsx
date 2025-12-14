@@ -3,7 +3,7 @@ import { SparklesIcon, PhotoIcon, XMarkIcon } from "@heroicons/react/24/outline"
 import { Button, Input, Modal } from "../common";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { ImageInfo } from "../../services/types";
+import { type ImageInfo } from "../../services";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

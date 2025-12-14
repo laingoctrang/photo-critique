@@ -1,4 +1,3 @@
-// components/Reaction/ReactionSelector.tsx
 import React from 'react';
 import { ReactionType } from '../../types/enums';
 
@@ -25,13 +24,13 @@ export const ReactionSelector: React.FC<ReactionSelectorProps> = ({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'w-8 h-8 text-base';
+        return 'w-10 h-10 text-lg';
       case 'md':
-        return 'w-10 h-10 text-lg';
-      case 'lg':
         return 'w-12 h-12 text-xl';
+      case 'lg':
+        return 'w-14 h-14 text-2xl';
       default:
-        return 'w-10 h-10 text-lg';
+        return 'w-12 h-12 text-xl';
     }
   };
 
@@ -45,7 +44,7 @@ export const ReactionSelector: React.FC<ReactionSelectorProps> = ({
             onClick={() => onSelect(reaction.type)}
             className={`
               rounded-full transition-all duration-200 flex items-center justify-center
-              hover:scale-125 active:scale-95
+              hover:scale-125
               ${getSizeClasses()}
               ${currentReaction === reaction.type 
                 ? 'bg-blue-50 border border-blue-200 scale-110' 

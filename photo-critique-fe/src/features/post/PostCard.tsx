@@ -154,7 +154,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       className={`bg-white rounded-3xl
                 w-full max-w-full h-full
                 mx-auto px-4 sm:px-0
-                ${isViewDetail ? "" : "overflow-hidden sm:max-w-md md:max-w-lg lg:max-w-3xl"}`}
+                ${isViewDetail ? "" : "sm:max-w-md md:max-w-lg lg:max-w-3xl"}`}
       data-post-id={currentPost.id}
     >
       {/* Header */}

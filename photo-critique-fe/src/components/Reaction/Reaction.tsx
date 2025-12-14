@@ -130,7 +130,13 @@ export const Reaction: React.FC<ReactionProps> = ({
         <button
           type="button"
           onMouseEnter={() => setIsSelectorOpen(!isSelectorOpen)}
-          onClick={() => handleReactionSelect(ReactionType.LOVE)}
+          onClick={() => {
+            if (userReaction) {
+              handleReactionSelect(userReaction);
+            } else {
+              handleReactionSelect(ReactionType.LIKE);
+            }
+          }}
           disabled={disabled}
           className={`
             flex items-center justify-center rounded-full transition-all duration-200
