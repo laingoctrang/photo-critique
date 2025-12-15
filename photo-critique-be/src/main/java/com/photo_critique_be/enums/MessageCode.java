@@ -19,6 +19,8 @@ public enum MessageCode {
     AUTH_RESET_TOKEN_INVALID("auth.reset.token.invalid"),
     AUTH_INSUFFICIENT_PERMISSIONS("auth.insufficient.permissions"),
     AUTH_UNAUTHORIZED("auth.unauthorized"),
+    AUTH_OAUTH_URL_GENERATED("auth.oauth.url.generated"),
+    AUTH_OAUTH_PROVIDER_MISMATCH("auth.oauth.provider.mismatch"),
 
     OTP_REGISTER_SEND_SUCCESS("otp.register.send.success"),
     OTP_REGISTER_VERIFY_SUCCESS("otp.register.verify.success"),
@@ -67,9 +69,28 @@ public enum MessageCode {
     FOLLOW_REQUEST_REJECTED("follow.request.rejected"),
     FOLLOW_REQUEST_ALREADY_PROCESSED("follow.request.already.processed"),
     USER_ONLINE_STATUS_UPDATED("user.online.status.updated"),
+    USER_PROFILE_RETRIEVED("user.profile.retrieved"),
+    USER_FOLLOWERS_RETRIEVED("user.followers.retrieved"),
+    USER_FOLLOWING_RETRIEVED("user.following.retrieved"),
+    USER_FOLLOW_REQUESTS_RETRIEVED("user.follow.requests.retrieved"),
+
+    // FILE
+    FILE_UPLOAD_SUCCESS("file.upload.success"),
+    FILE_UPLOAD_FAILED("file.upload.failed"),
+    FILE_DELETE_SUCCESS("file.delete.success"),
 
     // BADGE
     BADGE_NOT_FOUND("badge.not.found"),
+
+    // TAG
+    TAG_CREATED_SUCCESS("tag.created.success"),
+    TAG_UPDATED_SUCCESS("tag.updated.success"),
+    TAG_DELETED_SUCCESS("tag.deleted.success"),
+    TAG_GET_SUCCESS("tag.get.success"),
+    TAG_LIST_SUCCESS("tag.list.success"),
+    TAG_SEARCH_SUCCESS("tag.search.success"),
+    TAG_TRENDING_SUCCESS("tag.trending.success"),
+    TAG_NOT_FOUND("tag.not.found"),
 
     // POST
     POST_CREATED_SUCCESS("post.created.success"),

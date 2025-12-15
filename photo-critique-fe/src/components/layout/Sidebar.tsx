@@ -1,8 +1,10 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
-import { SIDEBAR_MENU } from "../constants";
-import { TabCategory, UserRole, type MenuItem } from "../types/enums";
-import { useAuth } from "../hooks";
+import { NavLink, useNavigate } from "react-router-dom";
+import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import { SIDEBAR_MENU } from "../../constants";
+import { TabCategory, UserRole, type MenuItem } from "../../types/enums";
+import { useAuth } from "../../hooks";
+import { Modal } from "../common";
 
 interface Conversation {
   id: string;
@@ -45,10 +47,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ conversations = [], className 
 
   return (
     <div
-      className={`sidebar border-r border-gray-100 h-screen flex flex-col w-80 shadow-sm ${className}`}
+      className={`sidebar bg-white h-full flex flex-col w-80 rounded-3xl ${className}`}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 p-5 pb-4 border-b border-gray-100">
+      <div className="flex items-center gap-3 p-5 pb-5">
         <div className="relative">
           <img src="/logo.png" alt="Logo" className="h-9 w-9 object-cover rounded-xl" />
         </div>
@@ -58,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ conversations = [], className 
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 p-4 overflow-y-auto space-y-6">
+      <nav className="flex-1 p-4 overflow-y-auto hidden-scrollbar space-y-6">
         {/* Main Navigation */}
         {menuItems.main.length > 0 && (
           <div>
@@ -124,11 +126,10 @@ const MenuItem: React.FC<{ item: MenuItem }> = ({ item }) => {
       <NavLink
         to={item.path}
         className={({ isActive }) =>
-          `w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${
-            isActive
-              ? `bg-gradient-to-r from-[#15B8A6]/10 to-[#15B8A6]/5 text-[#0E7C70] font-medium 
+          `w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${isActive
+            ? `bg-gradient-to-r from-[#15B8A6]/10 to-[#15B8A6]/5 text-[#0E7C70] font-medium 
                  shadow-[0_2px_10px_-2px_rgba(21,184,166,0.2)] border-l-3 border-[#15B8A6]}`
-              : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 hover:translate-x-1"
+            : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 hover:translate-x-1"
           }`
         }
       >
@@ -144,15 +145,15 @@ const MenuItem: React.FC<{ item: MenuItem }> = ({ item }) => {
 
 // Recent Conversations
 const RecentConversations: React.FC<{ conversations: Conversation[] }> = ({ conversations }) => (
-  <div className="border-t border-gray-100 bg-gradient-to-b from-gray-50/50 to-white pt-3">
+  <div className="border-t border-gray-100 pt-3">
     <div className="p-4 pt-0">
-      <div className="sticky top-0 bg-gradient-to-b from-gray-50/50 to-white pt-4 pb-3 z-10">
+      <div className="sticky top-0 pt-4 pb-3 z-10">
         <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-          <span className="bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] bg-clip-text text-transparent">
+          <span className="bg-clip-text text-transparent">
             Recent Chats
           </span>
           {conversations.some((c) => c.unreadCount > 0) && (
-            <span className="ml-2 bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] text-white text-xs font-bold px-2 py-1 rounded-full min-w-[22px] h-5 flex items-center justify-center shadow-sm">
+            <span className="ml-2 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[22px] h-5 flex items-center justify-center shadow-sm">
               {conversations.reduce((sum, c) => sum + c.unreadCount, 0)}
             </span>
           )}
@@ -160,8 +161,8 @@ const RecentConversations: React.FC<{ conversations: Conversation[] }> = ({ conv
       </div>
       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
         {conversations.length === 0 ? (
-          <div className="text-center py-6 px-4 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-100">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+          <div className="text-center py-6 px-4 rounded-xl border border-gray-100">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center">
               <span className="text-2xl">💬</span>
             </div>
             <p className="text-sm text-gray-500 font-medium">No recent conversations</p>
@@ -187,11 +188,10 @@ const ConversationItem: React.FC<{ conversation: Conversation }> = ({ conversati
           className="w-11 h-11 rounded-xl object-cover border-2 border-white shadow-sm"
         />
         <div
-          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-            conversation.isOnline 
-              ? "bg-gradient-to-r from-green-400 to-emerald-500" 
+          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${conversation.isOnline
+              ? "bg-gradient-to-r from-green-400 to-emerald-500"
               : "bg-gradient-to-r from-gray-300 to-gray-400"
-          }`}
+            }`}
         ></div>
       </div>
     </div>
@@ -210,21 +210,50 @@ const ConversationItem: React.FC<{ conversation: Conversation }> = ({ conversati
   </div>
 );
 
-const SidebarFooter: React.FC = () => (
-  <div className="p-4 border-t border-gray-100 bg-gradient-to-r from-white to-gray-50/50">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] flex items-center justify-center">
-          <span className="text-white text-sm font-bold">P</span>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-gray-900">© 2024 PhotoVerse</p>
-          <p className="text-xs text-gray-400">v2.1.0</p>
+const SidebarFooter: React.FC = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+
+  const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  return (
+    <>
+      <div className="p-4 border-t border-gray-100">
+        <div className="flex items-center">
+          <button
+            onClick={handleLogout}
+            className="w-fit h-10 px-4 flex items-center gap-3 text-gray-500 transition-colors duration-300 group cursor-pointer"
+            title="Logout"
+          >
+            <ArrowLeftStartOnRectangleIcon
+              className="w-5 h-5 text-gray-500 group-hover:text-[#15B8A6] transition-colors"
+            />
+            <span className="font-medium group-hover:text-[#15B8A6]">
+              Logout
+            </span>
+          </button>
         </div>
       </div>
-      <button className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100/80 text-gray-500 hover:text-[#15B8A6] transition-colors duration-300 group">
-        <span className="text-lg group-hover:rotate-90 transition-transform duration-500">⚙️</span>
-      </button>
-    </div>
-  </div>
-);
+
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        onConfirm={handleConfirmLogout}
+        variant="danger"
+        showCancel={true}
+      />
+    </>
+  );
+};

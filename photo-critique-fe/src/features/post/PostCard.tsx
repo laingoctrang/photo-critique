@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { ReactionType } from "../../types/enums";
-import { Reaction } from "../../components/Reaction/Reaction";
-import { ContentExpandable, ImageCarousel, ToastType } from "../../components";
+import { PrivacyType, ReactionType } from "../../types/enums";
+import { Reaction, ContentExpandable, ImageCarousel, ToastType } from "../../components";
 import { showToast } from "../../utils";
 import { postService, type PostListItemResponse } from "../../services";
 import {
   BookmarkIcon,
   ChatBubbleBottomCenterIcon,
   EllipsisVerticalIcon,
+  GlobeAltIcon,
+  LinkIcon,
+  LockClosedIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkIconSolid } from "@heroicons/react/24/solid";
@@ -17,11 +19,13 @@ import { useAuth } from "../../hooks";
 interface PostCardProps {
   post: PostListItemResponse;
   isViewDetail?: boolean;
+  onPostClick?: (postId: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
   post,
   isViewDetail = false,
+  onPostClick,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -87,7 +91,30 @@ export const PostCard: React.FC<PostCardProps> = ({
     };
   }, [post]);
 
-  const formattedDate = new Date(post.createdAt).toLocaleString();
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');  
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
+  const formattedDate = formatDate(post.createdAt);
+
+  const privacyIcon = (privacy: PrivacyType): React.ReactNode => {
+    switch (privacy) {
+      case PrivacyType.PUBLIC:
+        return <GlobeAltIcon className="w-4 h-4" title="Public" />;
+      case PrivacyType.PRIVATE:
+        return <LockClosedIcon className="w-4 h-4" title="Private" />;
+      case PrivacyType.FOLLOWER_ONLY:
+        return <LinkIcon className="w-4 h-4" title="Follower Only" />;
+      default:
+        return "";
+    }
+  };
 
   const handleReaction = async (
     postId: string,
@@ -124,7 +151,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-3xl overflow-hidden
+      className={`bg-white rounded-3xl
                 w-full max-w-full h-full
                 mx-auto px-4 sm:px-0
                 ${isViewDetail ? "" : "sm:max-w-md md:max-w-lg lg:max-w-3xl"}`}
@@ -143,8 +170,8 @@ export const PostCard: React.FC<PostCardProps> = ({
             <p className="text-sm font-semibold text-gray-900">
               {currentPost.user.fullName}
             </p>
-            <p className="text-xs text-gray-500">
-              @{currentPost.user.username} · {formattedDate}
+            <p className="flex items-center gap-1 text-xs text-gray-500 justify-center">
+              @{currentPost.user.username} · {formattedDate} · {privacyIcon(currentPost.privacy)}
             </p>
           </div>
         </div>
@@ -194,7 +221,13 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
           <div
             className="flex gap-1 items-center hover:underline cursor-pointer"
-            onClick={() => navigate(`/post/${currentPost.id}`)}
+            onClick={() => {
+              if (onPostClick) {
+                onPostClick(currentPost.id);
+              } else {
+                navigate(`/post/${currentPost.id}`);
+              }
+            }}
           >
             <ChatBubbleBottomCenterIcon className="w-6 h-6 text-gray-600" />
             <span className="text-gray-600">{currentPost.commentsCount}</span>

@@ -76,7 +76,7 @@ export const Toast: React.FC<ToastProps> = ({
       role="status"
       aria-live="polite"
       className={`
-        max-w-xs
+        max-w-md
         min-w-[300px]
         flex flex-col
         p-3 rounded-2xl shadow
@@ -95,7 +95,7 @@ export const Toast: React.FC<ToastProps> = ({
 
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm">{displayTitle}</p>
-          <p className="text-sm line-clamp-3 break-words">{message}</p>
+          <p className="text-sm break-words">{message}</p>
         </div>
 
         <button

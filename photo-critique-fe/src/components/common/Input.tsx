@@ -62,14 +62,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       {
         "w-full": fullWidth,
         // Sizes
-        "h-8 text-sm p-3": size === "small",
-        "h-10 text-base p-4": size === "medium",
-        "h-12 text-lg p-4": size === "large",
+        "h-10 text-sm p-3": size === "small",
+        "h-12 text-base p-4": size === "medium",
+        "h-14 text-lg p-4": size === "large",
         // Variants
-        "border rounded-2xl focus:ring-2": variant === "outline",
+        "border rounded-4xl focus:ring-2": variant === "outline",
         "border-gray-300 focus:border-[#15B8A6] focus:ring-[#15B8A6]/20":
           variant === "outline" && !error && !success,
-        "bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#15B8A6] focus:ring-2 focus:ring-[#15B8A6]/20":
+        "bg-gray-50 border border-transparent rounded-4xl focus:bg-white focus:border-[#15B8A6] focus:ring-2 focus:ring-[#15B8A6]/20":
           variant === "filled",
         "border-b border-gray-300 rounded-none bg-transparent px-0 focus:border-[#15B8A6]":
           variant === "flushed",
@@ -122,7 +122,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         >
           {/* Left Icon */}
           {LeftIcon && (
-            <LeftIcon className={cn(iconClasses, "ml-3")} aria-hidden="true" />
+            <LeftIcon className={cn(iconClasses)} aria-hidden="true" />
           )}
 
           {/* Input Field */}
@@ -142,7 +142,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {/* Loading Spinner */}
             {loading && (
               <ArrowPathIcon
-                className={cn(iconClasses, "animate-spin text-[#15B8A6]")}
+                className={cn(iconClasses, "animate-spin")}
                 aria-hidden="true"
               />
             )}

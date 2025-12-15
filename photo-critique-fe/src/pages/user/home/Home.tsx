@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { PostList } from "../../../features/post/PostList";
 import { postService, type PostListItemResponse } from "../../../services";
 import { Banner } from "./Banner";
 import { showToast } from "../../../utils";
-import { ToastType } from "../../../components";
+import { Loading, ToastType } from "../../../components";
+import { PostDetailModal, PostList } from "../../../features";
 
 const PAGE_SIZE = 20;
 
@@ -13,6 +13,7 @@ export const Home = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   // Load initial feed
@@ -93,30 +94,34 @@ export const Home = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-500">Loading post...</div>
+        <Loading variant="fullscreen" text="Loading posts..." />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="w-full">
-        <Banner />
-      </section>
+    <>
+      <div className="flex flex-col">
+        <section className="w-full">
+          <Banner />
+        </section>
 
-      <section className="w-full">
-        <PostList posts={posts} />
-        
-        {/* Observer target for infinite scroll */}
-        <div ref={observerTarget} className="h-10 flex items-center justify-center">
-          {isLoadingMore && (
-            <div className="text-gray-500 text-sm">Loading more posts...</div>
-          )}
-          {!hasMore && posts.length > 0 && (
-            <div className="text-gray-500 text-sm">No more posts to load</div>
-          )}
-        </div>
-      </section>
-    </div>
+        <section className="w-full">
+          <PostList posts={posts} onPostClick={setSelectedPostId} />
+          
+          {/* Observer target for infinite scroll */}
+          <div ref={observerTarget} className="h-10 flex items-center justify-center">
+            {isLoadingMore && (
+              <div className="text-gray-500 text-sm">Loading more posts...</div>
+            )}
+            {!hasMore && posts.length > 0 && (
+              <div className="text-gray-500 text-sm">No more posts to load</div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <PostDetailModal postId={selectedPostId} onClose={() => setSelectedPostId(null)} />
+    </>
   );
 };

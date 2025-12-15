@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const decoded = decodeAccessToken(token);
-    console.log("Decoded token on app load:", decoded);
 
     // token hết hạn → logout
     if (!decoded || decoded.exp * 1000 < Date.now()) {

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CommentSection } from "../../../components/Comment";
-import { postService, type PostResponse } from "../../../services";
-import { showToast } from "../../../utils";
-import { ToastType } from "../../../components";
-import { PostCard } from "../../../features";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { CommentSection } from "../../components/Comment";
+import { postService, type PostResponse } from "../../services";
+import { showToast } from "../../utils";
+import { Loading, ToastType } from "../../components";
+import { PostCard } from "..";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export const PostDetail: React.FC = () => {
   const { postId } = useParams();
@@ -14,30 +14,35 @@ export const PostDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [commentsCount, setCommentsCount] = useState(0);
 
+  // Save scroll position before navigating to detail
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    sessionStorage.setItem('homeScrollPosition', scrollY.toString());
+  }, []);
+
   useEffect(() => {
     if (!postId) {
       navigate("/");
       return;
     }
 
-    loadPost();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId]);
+    const loadPost = async () => {
+      try {
+        setIsLoading(true);
+        const data = await postService.getPostById(postId);
+        setPost(data);
+        setCommentsCount(data.commentsCount);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to load post";
+        showToast(ToastType.ERROR, errorMessage);
+        navigate("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const loadPost = async () => {
-    try {
-      setIsLoading(true);
-      const data = await postService.getPostById(postId!);
-      setPost(data);
-      setCommentsCount(data.commentsCount);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to load post";
-      showToast(ToastType.ERROR, errorMessage);
-      navigate("/");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    loadPost();
+  }, [postId, navigate]);
 
   const handleCommentCountChange = (count: number) => {
     setCommentsCount(count);
@@ -49,7 +54,7 @@ export const PostDetail: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-500">Loading post...</div>
+        <Loading variant="fullscreen" text="Loading post..." />
       </div>
     );
   }
@@ -63,12 +68,21 @@ export const PostDetail: React.FC = () => {
       {/* Close Button */}
       <div className="flex justify-end mb-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            // Restore scroll position when going back
+            const savedScroll = sessionStorage.getItem('homeScrollPosition');
+            if (savedScroll) {
+              setTimeout(() => {
+                window.scrollTo(0, parseInt(savedScroll, 10));
+              }, 100);
+            }
+            navigate(-1);
+          }}
           type="button"
           aria-label="Close post detail"
           className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white hover:bg-gray-100 border border-gray-200 shadow-sm transition-colors"
         >
-          <XMarkIcon className="w-6 h-6 text-gray-600" />
+          <ArrowLeftIcon className="w-6 h-6 text-gray-600" />
         </button>
       </div>
 

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { authService } from "../../services/authService";
 import { useNavigate } from "react-router-dom";
 import { OtpRequestType } from "../../types/enums";
 import { Button, Checkbox, ImageCarousel, Input, ToastType } from "../../components";
 import { useAuth } from "../../hooks";
 import { showToast } from "../../utils";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaFacebookF } from "react-icons/fa";
+import { FaFacebookF } from "react-icons/fa";
+import { authService, oAuthService } from "../../services";
 
 const imageModules = import.meta.glob("../../assets/images/auth/bg/*", {
   eager: true,
@@ -35,6 +35,8 @@ export const LoginSignup = () => {
 
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
 
   // OTP modal state
   const [showOtp, setShowOtp] = useState(false);
@@ -68,7 +70,6 @@ export const LoginSignup = () => {
 
     return () => {
       // cleaning on unmount or when deps change
-      // (we only clear interval when component unmounts; also handled above when reaches 0)
     };
   }, [resendCountdown]);
 
@@ -131,11 +132,8 @@ export const LoginSignup = () => {
 
     setOtpLoading(true);
     try {
-      // your verifyRegistration expects full payload per your types: VerifyRegisterData
-      // It expects username,email,password,fullName,otp
-      // We preserved username/fullName/password from form state (from signup flow)
       const verifyPayload = {
-        username: username || "", // ensure non-null (backend should validate)
+        username: username || "",
         email: pendingEmailForOtp,
         password: password || "",
         fullName: fullName || "",
@@ -177,7 +175,7 @@ export const LoginSignup = () => {
   const handleResendOtp = async (otpRequestType: OtpRequestType) => {
     if (!pendingEmailForOtp)
       return showToast(ToastType.ERROR, "No email to resend OTP to");
-    if (resendCountdown > 0) return; // throttle, should be disabled in UI anyway
+    if (resendCountdown > 0) return;
 
     try {
       // start cooldown immediately to avoid repeated clicks
@@ -190,12 +188,32 @@ export const LoginSignup = () => {
       showToast(ToastType.SUCCESS, res);
     } catch (err: any) {
       console.error(err);
-      // stop countdown on failure so user can try again (optional)
+      // stop countdown on failure so user can try again
       setResendCountdown(0);
       showToast(
         ToastType.ERROR,
         err?.response?.data?.message ?? "Failed to resend OTP"
       );
+    }
+  };
+
+  const handleRedirectToProvider = async (provider: 'google' | 'facebook') => {
+    try {
+      if (provider === 'google') {
+        setGoogleLoading(true);
+      } else {
+        setFacebookLoading(true);
+      }
+      // open new window to redirect to provider
+      await oAuthService.redirectToProvider(provider);
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error?.message || `Failed to connect with ${provider}`);
+    } finally {
+      if (provider === 'google') {
+        setGoogleLoading(false);
+      } else {
+        setFacebookLoading(false);
+      }
     }
   };
 
@@ -207,151 +225,165 @@ export const LoginSignup = () => {
       />
 
       <div className="min-h-screen flex items-center justify-center px-6 py-6 overflow-y-auto">
-        <div className="w-full max-w-6xl">
-          <div className="bg-white rounded-4xl shadow-xl overflow-hidden md:flex max-h-[90vh]">
+        <div className="w-full h-full max-w-6xl lg:w-3/5">
+          <div className="bg-white rounded-4xl shadow-xl md:flex max-h-[90vh]">
             {/* FORM */}
-            <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center md:w-4/7 lg:w-1/2">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-4xl font-extrabold text-gray-900">
-                  {mode === "login" ? "Welcome Back" : "Create Account"}
-                </h2>
-              </div>
-
-
-              {/* Social Login */}
-              <div className="flex flex-col items-center gap-6">
-                <div className="flex gap-4">
-                  <button className="p-3 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer">
-                    <FcGoogle className="text-2xl" />
-                  </button>
-
-                  <button className="p-3 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer">
-                    <FaFacebookF className="text-2xl text-blue-600" />
-                  </button>
-
-                  <button className="p-3 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer">
-                    <FaApple className="text-2xl" />
-                  </button>
+            <div className="p-6 md:p-8 lg:px-15 lg:py-5 overflow-y-auto max-h-full hidden-scrollbar md:w-4/7 lg:w-1/2">
+              <div className="flex flex-col gap-5 justify-center min-h-full">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-4xl font-extrabold text-gray-900">
+                    {mode === "login" ? "Welcome Back" : "Create Account"}
+                  </h2>
                 </div>
 
-                <div className="relative w-full">
+                <form
+                  className="space-y-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit();
+                  }}
+                >
+                  {mode === "signup" && (
+                    <Input
+                      label="Full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Enter full name"
+                      fullWidth
+                      variant="outline"
+                      size="small"
+                      required
+                    />
+                  )}
+
+                  {mode === "signup" && (
+                    <Input
+                      label="Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Enter username"
+                      fullWidth
+                      variant="outline"
+                      size="small"
+                      required
+                    />
+                  )}
+
+                  <div>
+                    <Input
+                      label="Email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      fullWidth
+                      variant="outline"
+                      size="small"
+                      type="email"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Input
+                      label="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      fullWidth
+                      variant="outline"
+                      size="small"
+                      type="password"
+                      required
+                    />
+                  </div>
+
+                  {
+                    mode === "login" && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            label="Remember me"
+                            checked={remember}
+                            onChange={(e) => setRemember(e.target.checked)}
+                            fullWidth
+                            size="small"
+                          />
+                        </div>
+                        <div className="mt-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => navigate("/forgot-password")}
+                            className="text-sm text-[#15B8A6] hover:text-[#0fa192] hover:underline transition-colors cursor-pointer"
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  <div className="pt-6">
+                    <Button
+                      variant="primary"
+                      isLoading={loading}
+                      className="w-full rounded-4xl"
+                      size="medium"
+                    >
+                      {mode === "login" ? "Login" : "Sign up"}
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-3 bg-white text-gray-500">
-                      or use your email account
+                  <div className="relative flex justify-center">
+                    <span className="px-4 bg-white text-gray-500 font-medium text-xs">
+                      OR
                     </span>
                   </div>
                 </div>
-              </div>
 
-              <form
-                className="mt-6 space-y-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSubmit();
-                }}
-              >
-                {mode === "signup" && (
-                  <Input
-                    label="Full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter full name"
-                    fullWidth
-                    variant="outline"
-                    size="medium"
-                    required
-                  />
-                )}
+                {/* Social Login */}
+                <div className="flex flex-col sm:flex-row gap-4 w-full">
+                  <Button
+                    variant="secondary"
+                    leftIcon={FcGoogle}
+                    isLoading={googleLoading}
+                    className="w-full"
+                    onClick={() => handleRedirectToProvider('google')}
+                    size="small"
+                  >
+                    Google
+                  </Button>
 
-                {mode === "signup" && (
-                  <Input
-                    label="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
-                    fullWidth
-                    variant="outline"
-                    size="medium"
-                    required
-                  />
-                )}
-
-                <div>
-                  <Input
-                    label="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    fullWidth
-                    variant="outline"
-                    size="medium"
-                    type="email"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Input
-                    label="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    fullWidth
-                    variant="outline"
-                    size="medium"
-                    type="password"
-                    required
-                  />
-                </div>
-
-                {
-                  mode === "login" && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          label="Remember me"
-                          checked={remember}
-                          onChange={(e) => setRemember(e.target.checked)}
-                          fullWidth
-                        />
-                      </div>
-                      <div className="mt-2 text-right">
-                        <button
-                          type="button"
-                          onClick={() => navigate("/forgot-password")}
-                          className="text-sm text-[#15B8A6] hover:text-[#0fa192] hover:underline transition-colors cursor-pointer"
-                        >
-                          Forgot password?
-                        </button>
-                      </div>
-                    </div>
-                  )
-                }
-
-                <div className="mt-6 text-sm text-gray-500 text-center">
-                  <Button variant="primary" isLoading={loading} className="w-3xs">
-                    {mode === "login" ? "Login" : "Sign up"}
+                  <Button
+                    variant="secondary"
+                    leftIcon={({ className }) => <FaFacebookF className={`${className} text-blue-600`} />}
+                    isLoading={facebookLoading}
+                    className="w-full"
+                    onClick={() => handleRedirectToProvider('facebook')}
+                    size="small"
+                  >
+                    Facebook
                   </Button>
                 </div>
-              </form>
 
-              <div className="mt-6 text-sm text-gray-500 text-center">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setMode((m) => (m === "login" ? "signup" : "login"))
-                  }
-                >
-                  {mode === "login"
-                    ? "Don't have an account? "
-                    : "Already have an account? "}
-                  <span className="text-[#15B8A6] font-bold hover:underline cursor-pointer">
-                    {mode === "login" ? "Sign up" : "Login"}
-                  </span>
-                </button>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    {mode === "login"
+                      ? "Don't have an account? "
+                      : "Already have an account? "}
+                    <button
+                      type="button"
+                      onClick={() => setMode((m) => (m === "login" ? "signup" : "login"))}
+                      className="text-[#15B8A6] font-semibold hover:text-[#0fa192] hover:underline cursor-pointer ml-1"
+                    >
+                      {mode === "login" ? "Sign up" : "Sign in"}
+                    </button>
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -374,13 +406,13 @@ export const LoginSignup = () => {
       {/* OTP Modal */}
       {showOtp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm bg-white rounded-xl p-6">
-            <h3 className="text-lg font-semibold">Enter verification code</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              We sent a 6-digit code to <strong>{pendingEmailForOtp}</strong>
+          <div className="w-full max-w-md bg-white rounded-4xl p-6 flex gap-5 flex-col">
+            <h2 className="text-2xl font-extrabold text-gray-900">Enter verification code</h2>
+            <p className="text-gray-500 text-center">
+              We sent a 6-digit code to <br></br><strong className="text-[#15B8A6]">{pendingEmailForOtp}</strong>
             </p>
 
-            <div className="mt-4 flex items-center justify-center">
+            <div className="flex justify-center">
               <input
                 value={otp}
                 onChange={(e) => {
@@ -388,39 +420,42 @@ export const LoginSignup = () => {
                   setOtp(v);
                 }}
                 inputMode="numeric"
-                className="w-40 text-center text-xl tracking-wider rounded-md border border-gray-200 px-3 py-2"
+                className="px-2 text-3xl text-center tracking-[7px] bg-transparent border-none outline-none focus:outline-none w-fit"
                 placeholder="______"
               />
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
-              <button
+
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowOtp(false);
                   setPendingEmailForOtp(null);
                 }}
-                className="text-sm text-gray-600 hover:underline"
+                size="small"
               >
                 Cancel
-              </button>
+              </Button>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleResendOtp(OtpRequestType.REGISTER)}
-                  disabled={resendCountdown > 0 || otpLoading}
-                  className="text-sm text-indigo-600 hover:underline disabled:opacity-40"
-                >
-                  {resendCountdown > 0
-                    ? `Resend (${resendCountdown}s)`
-                    : "Resend"}
-                </button>
-
-                <button
-                  onClick={handleVerifyOtp}
-                  disabled={otpLoading}
-                  className="ml-2 rounded-md bg-indigo-600 disabled:opacity-60 hover:bg-indigo-700 text-white py-2 px-4"
-                >
-                  {otpLoading ? "Verifying..." : "Verify"}
-                </button>
+              <Button
+                variant="outline"
+                onClick={() => handleResendOtp(OtpRequestType.REGISTER)}
+                disabled={resendCountdown > 0 || otpLoading}
+                size="small"
+              >
+                {resendCountdown > 0
+                  ? `Resend (${resendCountdown}s)`
+                  : "Resend"}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleVerifyOtp}
+                disabled={otpLoading}
+                size="small"
+              >
+                {otpLoading ? "Verifying..." : "Verify"}
+              </Button>
               </div>
             </div>
           </div>

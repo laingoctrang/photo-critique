@@ -4,12 +4,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { CommentItem } from "./CommentItem";
 import { CommentInput } from "./CommentInput";
-import { type CommentResponse, type CommentSortOption, commentService, type CreateCommentRequest } from "../../services/commentService";
 import { useAuth } from "../../hooks";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { ImageInfo } from "../../services/types";
 import { showToast } from "../../utils";
+import { commentService, type CommentResponse, type CommentSortOption, type CreateCommentRequest, type ImageInfo } from "../../services";
 import { ToastType } from "../Toast";
 
 function cn(...inputs: ClassValue[]) {

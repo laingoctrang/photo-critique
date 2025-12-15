@@ -126,11 +126,17 @@ export const Reaction: React.FC<ReactionProps> = ({
       onMouseLeave={handleMouseLeave}
     >
       {/* Reaction Button */}
-      <div className="relative z-500">
+      <div className="relative z-10">
         <button
           type="button"
           onMouseEnter={() => setIsSelectorOpen(!isSelectorOpen)}
-          onClick={() => handleReactionSelect(ReactionType.LOVE)}
+          onClick={() => {
+            if (userReaction) {
+              handleReactionSelect(userReaction);
+            } else {
+              handleReactionSelect(ReactionType.LIKE);
+            }
+          }}
           disabled={disabled}
           className={`
             flex items-center justify-center rounded-full transition-all duration-200

@@ -39,7 +39,7 @@ public class UserController {
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getUserProfileById(@PathVariable String userId) {
         UserProfileResponse response = userService.getUserProfileById(userId);
-        return ResponseEntity.ok(ApiResponse.success(response, "User profile retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.USER_PROFILE_RETRIEVED)));
     }
 
     @PutMapping("/me")
@@ -77,7 +77,7 @@ public class UserController {
             @PathVariable String userId,
             @PageableDefault(size = 20) Pageable pageable) {
         Page<UserListItemResponse> response = userService.getFollowers(userId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response, "Followers retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.USER_FOLLOWERS_RETRIEVED)));
     }
 
     @GetMapping("/{userId}/following")
@@ -85,14 +85,14 @@ public class UserController {
             @PathVariable String userId,
             @PageableDefault(size = 20) Pageable pageable) {
         Page<UserListItemResponse> response = userService.getFollowing(userId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response, "Following retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.USER_FOLLOWING_RETRIEVED)));
     }
 
     @GetMapping("/me/follow-requests")
     public ResponseEntity<ApiResponse<Page<UserListItemResponse>>> getFollowRequests(
             @PageableDefault(size = 20) Pageable pageable) {
         Page<UserListItemResponse> response = userService.getFollowRequests(pageable);
-        return ResponseEntity.ok(ApiResponse.success(response, "Follow requests retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.USER_FOLLOW_REQUESTS_RETRIEVED)));
     }
 
     @PutMapping("/me/online-status")

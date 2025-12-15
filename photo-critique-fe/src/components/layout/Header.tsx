@@ -1,5 +1,6 @@
-import { useAuth } from "../hooks";
-import { SearchBar } from "./SearchBar";
+import React from "react";
+import { useAuth } from "../../hooks";
+import { SearchBar } from "../common/SearchBar";
 
 interface User {
   id: string;
@@ -30,10 +31,10 @@ export const Header: React.FC = () => {
 }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-gray-200 backdrop-blur">
-      <div className="flex h-16 items-center justify-between px-4 gap-5">
+    <header className="sticky top-0 z-40 w-full backdrop-blur">
+      <div className="flex items-center justify-between px-4 gap-5">
         {/* Search */}
-        <div className="py-6 flex-1">
+        <div className="py-3 flex-1">
           <SearchBar 
             onSearch={handleSearch}
             className="max-w-md m-auto"

@@ -38,6 +38,7 @@ public class SecurityConfig {
 
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/oauth/**").permitAll()
 
                         // Protected endpoints
                         .requestMatchers("/api/users/**").authenticated()
