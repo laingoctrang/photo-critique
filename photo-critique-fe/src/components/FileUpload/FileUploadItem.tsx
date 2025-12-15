@@ -6,11 +6,14 @@ import {
   PhotoIcon,
   VideoCameraIcon,
   DocumentIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleIconSolid } from "@heroicons/react/24/solid";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { ImageInfo } from "../../services/types";
+import type { ModerationResult } from "../../services/moderationService";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,6 +27,7 @@ export interface FileUploadItemData {
   progress: number;
   status: "pending" | "uploading" | "completed" | "error";
   error?: string;
+  moderationResult?: ModerationResult;
 }
 
 interface FileUploadItemProps {
@@ -31,6 +35,7 @@ interface FileUploadItemProps {
   onDelete: (id: string) => void;
   onTitleChange: (id: string, title: string) => void;
   onPreview?: (item: FileUploadItemData) => void;
+  onViolationClick?: (item: FileUploadItemData) => void;
   isDragging?: boolean;
 }
 
@@ -57,6 +62,7 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
   onDelete,
   onTitleChange,
   onPreview,
+  onViolationClick,
   isDragging = false,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -121,12 +127,16 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
     }
   };
 
+  const isViolating = item.moderationResult && !item.moderationResult.allowed;
+
   return (
     <div
       className={cn(
         "flex items-start gap-3 p-3 rounded-lg border-2 transition-all",
         isDragging
           ? "border-[#15B8A6] bg-[#F0FDFA] opacity-50"
+          : isViolating
+          ? "border-red-500 bg-red-50"
           : "border-gray-200 bg-white hover:border-gray-300 cursor-move"
       )}
     >
@@ -136,13 +146,28 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
           <button
             type="button"
             onClick={() => onPreview?.(item)}
-            className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 hover:border-[#15B8A6] transition-colors cursor-pointer"
+            className={cn(
+              "w-16 h-16 rounded-lg overflow-hidden border transition-colors cursor-pointer relative",
+              isViolating
+                ? "border-red-500 hover:border-red-600"
+                : "border-gray-200 hover:border-[#15B8A6]"
+            )}
           >
             <img
               src={previewUrl}
               alt={item.title || "Preview"}
               className="w-full h-full object-cover"
             />
+            {item.status === "uploading" && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <ArrowPathIcon className="w-6 h-6 text-white animate-spin" />
+              </div>
+            )}
+            {isViolating && (
+              <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+              </div>
+            )}
           </button>
         ) : (
           <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
@@ -154,7 +179,7 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
       {/* File Info */}
       <div className="flex-1 min-w-0">
         {/* Title Input */}
-        {isEditingTitle ? (
+        {isEditingTitle && item.status !== "uploading" ? (
           <input
             type="text"
             value={titleValue}
@@ -167,9 +192,14 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
           />
         ) : (
           <div
-            className="text-sm font-medium text-gray-900 cursor-text hover:text-[#15B8A6] transition-colors"
-            onClick={() => setIsEditingTitle(true)}
-            title="Click to edit title"
+            className={cn(
+              "text-sm font-medium transition-colors",
+              item.status === "uploading"
+                ? "text-white cursor-default"
+                : "text-gray-900 cursor-text hover:text-[#15B8A6]"
+            )}
+            onClick={() => item.status !== "uploading" && setIsEditingTitle(true)}
+            title={item.status === "uploading" ? undefined : "Click to edit title"}
           >
             {item.title || "Untitled"}
           </div>
@@ -203,11 +233,21 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
               <span>Uploading...</span>
             </div>
           )}
-          {item.status === "completed" && (
+          {item.status === "completed" && !isViolating && (
             <div className="flex items-center gap-1 text-xs text-green-600">
               <CheckCircleIconSolid className="w-4 h-4" />
               <span>Completed</span>
             </div>
+          )}
+          {item.status === "completed" && isViolating && (
+            <button
+              type="button"
+              onClick={() => onViolationClick?.(item)}
+              className="flex items-center gap-1 text-xs text-red-600 font-semibold hover:text-red-700 hover:underline transition-colors cursor-pointer"
+            >
+              <ExclamationTriangleIcon className="w-4 h-4" />
+              <span>Policy Violation</span>
+            </button>
           )}
           {item.status === "error" && (
             <div className="flex items-center gap-1 text-xs text-red-600">
