@@ -84,7 +84,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     }
   };
 
-  const handleSubmitComment = async (content: string, selectedImageUrl?: string, parentCommentId?: string | null) => {
+  const handleSubmitComment = async (content: string, originalImage?: string, aiGeneratedImage?: string, parentCommentId?: string | null) => {
     try {
       // If posting and there's a generated image, clear it (user confirmed cancellation)
       if (!parentCommentId && mainInputGeneratedImage) {
@@ -94,7 +94,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       const data: CreateCommentRequest = {
         postId,
         content,
-        ...(selectedImageUrl && { selectedImageUrl }),
+        originalImage: originalImage || undefined,
+        aiGeneratedImage: aiGeneratedImage || undefined,
         ...(parentCommentId && { parentCommentId }),
       };
       
@@ -150,7 +151,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       const data: CreateCommentRequest = {
         postId,
         content,
-        selectedImageUrl,
+        aiGeneratedImage: mainInputGeneratedImage || undefined,
+        originalImage: selectedImageUrl, // Save original image URL
       };
       
       const newComment = await commentService.createComment(data);
@@ -337,7 +339,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       {/* Comment Input */}
       <div className="p-4 border-b border-gray-200">
         <CommentInput
-          onSubmit={(content, selectedImageUrl) => handleSubmitComment(content, selectedImageUrl, null)}
+          onSubmit={(content: string, originalImage?: string, aiGeneratedImage?: string) => handleSubmitComment(content, originalImage, aiGeneratedImage, null)}
           onGenerate={
             imageUrls.length > 0 ? handleGenerateImage : undefined
           }
@@ -345,7 +347,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           isGenerating={!!isGenerating}
           generatingProgress={generatingProgress}
           placeholder="Generate an edit, e.g."
-          generatedImageUrl={mainInputGeneratedImage}
+          generatedImage={mainInputGeneratedImage}
           onGeneratedImageChange={setMainInputGeneratedImage}
         />
       </div>

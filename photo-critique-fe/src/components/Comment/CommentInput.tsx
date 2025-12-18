@@ -17,7 +17,8 @@ interface CommentInputProps {
   isGenerating?: boolean;
   generatingProgress?: number;
   disabled?: boolean;
-  generatedImageUrl?: string | null;
+  aiGeneratedImage?: string | null;
+  originalImage?: string | null;
   onGeneratedImageChange?: (url: string | null) => void;
 }
 
@@ -31,7 +32,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   isGenerating = false,
   generatingProgress = 0,
   disabled = false,
-  generatedImageUrl: externalGeneratedImageUrl,
+  aiGeneratedImage: aiGeneratedImage,
   onGeneratedImageChange,
 }) => {
   const [content, setContent] = useState("");
@@ -42,7 +43,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // Use external generated image URL if provided, otherwise use internal state
-  const generatedImageUrl = externalGeneratedImageUrl !== undefined ? externalGeneratedImageUrl : internalGeneratedImageUrl;
+  const generatedImageUrl = aiGeneratedImage !== undefined ? aiGeneratedImage : internalGeneratedImageUrl;
   
   const setGeneratedImageUrl = (url: string | null) => {
     if (onGeneratedImageChange) {
@@ -54,7 +55,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
   // Filter only images (not videos)
   const availableImages = imageUrls.filter((img) =>
-    img.contentType.startsWith("image/")
+    img.contentType?.startsWith("image/")
   );
 
   const selectedImage = selectedImageIndex !== null ? availableImages[selectedImageIndex] : null;

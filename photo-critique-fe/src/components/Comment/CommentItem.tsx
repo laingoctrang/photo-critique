@@ -13,6 +13,7 @@ import { type CommentResponse } from "../../services";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Button } from "../common/Button";
+import { CommentImage } from "./CommentImage";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -106,13 +107,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
         {/* Generated Image */}
         {comment.aiGeneratedImage && (
-          <div className="mb-3 rounded-lg overflow-hidden max-w-sm">
-            <img
-              src={comment.aiGeneratedImage}
-              alt="AI generated image"
-              className="w-full h-auto object-cover"
+            <CommentImage
+              aiGeneratedImage={comment.aiGeneratedImage}
+              originalImage={comment.originalImage}
+              className="mb-2"
             />
-          </div>
         )}
 
         {/* Actions */}

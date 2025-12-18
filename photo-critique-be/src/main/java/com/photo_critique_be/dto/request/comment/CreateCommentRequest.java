@@ -11,5 +11,7 @@ public class CreateCommentRequest {
     private String parentCommentId;
 
     private String aiGeneratedImage;
+
+    private String originalImage;
 }
 

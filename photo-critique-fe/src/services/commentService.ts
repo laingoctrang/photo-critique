@@ -16,6 +16,7 @@ export interface CommentResponse {
   user: CommentUser;
   content: string;
   aiGeneratedImage?: string;
+  originalImage?: string;
   parentCommentId?: string;
   isHelpful: boolean;
   likesCount: number;
@@ -29,7 +30,8 @@ export interface CreateCommentRequest {
   postId: string;
   content: string;
   parentCommentId?: string;
-  selectedImageUrl?: string; // URL of selected image for AI generation
+  aiGeneratedImage?: string;
+  originalImage?: string;
 }
 
 export interface UpdateCommentRequest {
@@ -67,7 +69,12 @@ export const commentService = {
   ): Promise<CommentResponse> => {
     const response = await api.post<ApiResponse<CommentResponse>>(
       `/posts/${data.postId}/comments`,
-      { content: data.content, parentCommentId: data.parentCommentId, selectedImageUrl: data.selectedImageUrl }
+      { 
+        content: data.content, 
+        parentCommentId: data.parentCommentId, 
+        aiGeneratedImage: data.aiGeneratedImage,
+        originalImage: data.originalImage 
+      }
     );
     return response.data.data;
   },
