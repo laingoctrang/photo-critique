@@ -125,10 +125,10 @@ export const commentService = {
   },
 
   generateImage: async (
-    _commentId: string,
+    // _commentId: string,
     prompt: string,
     imageUrl: string,
-    _postId: string,
+    // _postId: string,
     onProgress?: (progress: number) => void
   ): Promise<{ imageUrl: string }> => {
     // Call external edit-image API

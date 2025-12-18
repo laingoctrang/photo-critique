@@ -12,7 +12,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ngrok/, ''),
         configure: (proxy, _options) => {
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
             proxyReq.setHeader('ngrok-skip-browser-warning', 'true');
           });
         },

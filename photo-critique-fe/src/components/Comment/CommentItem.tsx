@@ -87,7 +87,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2">
           <span className="font-semibold text-gray-900">
             {comment.user.fullName}
           </span>
@@ -101,7 +101,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         </div>
 
         {/* Comment Text */}
-        <p className="text-gray-800 mb-2 whitespace-pre-wrap break-words">
+        <p className="text-gray-800 mb-1 whitespace-pre-wrap break-words">
           {comment.content}
         </p>
 
@@ -110,7 +110,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <CommentImage
               aiGeneratedImage={comment.aiGeneratedImage}
               originalImage={comment.originalImage}
-              className="mb-2"
             />
         )}
 

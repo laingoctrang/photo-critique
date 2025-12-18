@@ -8,7 +8,7 @@ import { useAuth } from "../../hooks";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { showToast } from "../../utils";
-import { commentService, type CommentResponse, type CommentSortOption, type CreateCommentRequest, type ImageInfo } from "../../services";
+import { commentService, type CommentResponse, type CommentSortOption, type ImageInfo } from "../../services";
 import { ToastType } from "../Toast";
 
 function cn(...inputs: ClassValue[]) {
@@ -45,12 +45,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const [sortOption, setSortOption] = useState<CommentSortOption>("newest");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [commentsCount, setCommentsCount] = useState(initialCommentsCount);
-  const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [mainInputGeneratedImage, setMainInputGeneratedImage] = useState<string | null>(null);
-  const [generatingProgress, setGeneratingProgress] = useState(0);
 
   const isPostAuthor = postAuthorId === user?.id;
 
@@ -84,126 +81,45 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     }
   };
 
-  const handleSubmitComment = async (content: string, originalImage?: string, aiGeneratedImage?: string, parentCommentId?: string | null) => {
-    try {
-      // If posting and there's a generated image, clear it (user confirmed cancellation)
-      if (!parentCommentId && mainInputGeneratedImage) {
-        setMainInputGeneratedImage(null);
-      }
-
-      const data: CreateCommentRequest = {
-        postId,
-        content,
-        originalImage: originalImage || undefined,
-        aiGeneratedImage: aiGeneratedImage || undefined,
-        ...(parentCommentId && { parentCommentId }),
-      };
-      
-      const newComment = await commentService.createComment(data);
-      
-      if (parentCommentId) {
-        // Add reply to parent comment
-        setComments((prev) =>
-          prev.map((c) => {
-            if (c.id === parentCommentId) {
+  const handleCommentCreated = (newComment: CommentResponse) => {
+    if (replyingTo) {
+      // Add reply to parent comment
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c.id === replyingTo) {
+            return {
+              ...c,
+              replies: [...(c.replies || []), newComment],
+            };
+          }
+          // Also check nested replies
+          const updateReplies = (comment: CommentResponse): CommentResponse => {
+            if (comment.id === replyingTo) {
               return {
-                ...c,
-                replies: [...(c.replies || []), newComment],
+                ...comment,
+                replies: [...(comment.replies || []), newComment],
               };
             }
-            // Also check nested replies
-            const updateReplies = (comment: CommentResponse): CommentResponse => {
-              if (comment.id === parentCommentId) {
-                return {
-                  ...comment,
-                  replies: [...(comment.replies || []), newComment],
-                };
-              }
-              if (comment.replies) {
-                return {
-                  ...comment,
-                  replies: comment.replies.map(updateReplies),
-                };
-              }
-              return comment;
-            };
-            return updateReplies(c);
-          })
-        );
-      } else {
-        // Add as top-level comment
-        setComments((prev) => [newComment, ...prev]);
-      }
-      
-      setCommentsCount((prev) => prev + 1);
-      onCommentCountChange?.(commentsCount + 1);
-      onCommentAdded?.();
-      showToast(ToastType.SUCCESS, "Comment posted successfully");
-    } catch (error: any) {
-      showToast(ToastType.ERROR, error.message || "Failed to post comment");
-      throw error;
+            if (comment.replies) {
+              return {
+                ...comment,
+                replies: comment.replies.map(updateReplies),
+              };
+            }
+            return comment;
+          };
+          return updateReplies(c);
+        })
+      );
+      setReplyingTo(null);
+    } else {
+      // Add as top-level comment
+      setComments((prev) => [newComment, ...prev]);
     }
-  };
-
-  const handleGenerateImage = async (content: string, selectedImageUrl: string) => {
-    try {
-      // First create the comment
-      const data: CreateCommentRequest = {
-        postId,
-        content,
-        aiGeneratedImage: mainInputGeneratedImage || undefined,
-        originalImage: selectedImageUrl, // Save original image URL
-      };
-      
-      const newComment = await commentService.createComment(data);
-      setIsGenerating(newComment.id);
-      setMainInputGeneratedImage(null); // Reset before generating
-      setGeneratingProgress(0); // Reset progress
-
-      // Then generate the image
-      try {
-        const result = await commentService.generateImage(
-          newComment.id,
-          content,
-          selectedImageUrl,
-          postId,
-          (progress) => {
-            setGeneratingProgress(progress);
-          }
-        );
-
-        // Store generated image URL for the input preview
-        setMainInputGeneratedImage(result.imageUrl);
-
-        // Update comment with generated image
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === newComment.id
-              ? { ...c, aiGeneratedImage: result.imageUrl }
-              : c
-          )
-        );
-        setCommentsCount((prev) => prev + 1);
-        onCommentCountChange?.(commentsCount + 1);
-        onCommentAdded?.();
-        showToast(ToastType.SUCCESS, "Image generated successfully!");
-      } catch (genError: any) {
-        // If generation fails, remove the comment that was created
-        setComments((prev) => prev.filter((c) => c.id !== newComment.id));
-        showToast(
-          ToastType.ERROR,
-          genError.message || "Failed to generate image"
-        );
-      } finally {
-        setIsGenerating(null);
-        setGeneratingProgress(0);
-      }
-    } catch (error: any) {
-      setIsGenerating(null);
-      setGeneratingProgress(0);
-      showToast(ToastType.ERROR, error.message || "Failed to create comment");
-      throw error;
-    }
+    
+    setCommentsCount((prev) => prev + 1);
+    onCommentCountChange?.(commentsCount + 1);
+    onCommentAdded?.();
   };
 
   const handleReply = (comment: CommentResponse) => {
@@ -213,10 +129,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const handleSubmitReply = async (content: string) => {
     if (!replyingTo) return;
     try {
-      await handleSubmitComment(content, undefined, replyingTo);
-      setReplyingTo(null);
-    } catch (error) {
-      // Error already handled in handleSubmitComment
+      const newComment = await commentService.createComment({
+        postId,
+        content,
+        parentCommentId: replyingTo,
+      });
+      handleCommentCreated(newComment);
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error.message || "Failed to post reply");
     }
   };
 
@@ -339,16 +259,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       {/* Comment Input */}
       <div className="p-4 border-b border-gray-200">
         <CommentInput
-          onSubmit={(content: string, originalImage?: string, aiGeneratedImage?: string) => handleSubmitComment(content, originalImage, aiGeneratedImage, null)}
-          onGenerate={
-            imageUrls.length > 0 ? handleGenerateImage : undefined
-          }
+          postId={postId}
           imageUrls={imageUrls}
-          isGenerating={!!isGenerating}
-          generatingProgress={generatingProgress}
           placeholder="Generate an edit, e.g."
-          generatedImage={mainInputGeneratedImage}
-          onGeneratedImageChange={setMainInputGeneratedImage}
+          onCommentCreated={handleCommentCreated}
         />
       </div>
 

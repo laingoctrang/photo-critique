@@ -1,57 +1,41 @@
 import React, { useState } from "react";
-import { SparklesIcon, PhotoIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { SparklesIcon, PhotoIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { Button, Input, Modal } from "../common";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { type ImageInfo } from "../../services";
+import { type ImageInfo, commentService, type CommentResponse } from "../../services";
+import { CommentImage } from "./CommentImage";
+import { showToast } from "../../utils";
+import { ToastType } from "../Toast";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 interface CommentInputProps {
-  onSubmit: (content: string, selectedImageUrl?: string) => Promise<void>;
-  onGenerate?: (content: string, selectedImageUrl: string) => Promise<void>;
+  postId: string;
   placeholder?: string;
   imageUrls?: ImageInfo[];
-  isGenerating?: boolean;
-  generatingProgress?: number;
   disabled?: boolean;
-  aiGeneratedImage?: string | null;
-  originalImage?: string | null;
-  onGeneratedImageChange?: (url: string | null) => void;
+  onCommentCreated?: (comment: CommentResponse) => void;
 }
 
-type ModalType = "post-with-generated" | "post-with-image" | null;
+type ModalType = "post-with-image" | null;
 
 export const CommentInput: React.FC<CommentInputProps> = ({
-  onSubmit,
-  onGenerate,
+  postId,
   placeholder = "Generate an edit, e.g.",
   imageUrls = [],
-  isGenerating = false,
-  generatingProgress = 0,
   disabled = false,
-  aiGeneratedImage: aiGeneratedImage,
-  onGeneratedImageChange,
+  onCommentCreated,
 }) => {
   const [content, setContent] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [internalGeneratedImageUrl, setInternalGeneratedImageUrl] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState(0);
   const [showModal, setShowModal] = useState<ModalType>(null);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-
-  // Use external generated image URL if provided, otherwise use internal state
-  const generatedImageUrl = aiGeneratedImage !== undefined ? aiGeneratedImage : internalGeneratedImageUrl;
-  
-  const setGeneratedImageUrl = (url: string | null) => {
-    if (onGeneratedImageChange) {
-      onGeneratedImageChange(url);
-    } else {
-      setInternalGeneratedImageUrl(url);
-    }
-  };
 
   // Filter only images (not videos)
   const availableImages = imageUrls.filter((img) =>
@@ -64,22 +48,9 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     e.preventDefault();
     if (!content.trim() || isSubmitting || disabled) return;
 
-    // If there's a generated image, show confirmation to cancel it
-    if (generatedImageUrl) {
-      setShowModal("post-with-generated");
-      setPendingAction(() => async () => {
-        setGeneratedImageUrl(null);
-        await handlePostSubmit();
-      });
-      return;
-    }
-
     // If there's a selected image but no generated image, ask if they want to generate or post without
-    if (selectedImage && onGenerate) {
+    if (selectedImage && imageUrls.length > 0 && !generatedImageUrl) {
       setShowModal("post-with-image");
-      setPendingAction(() => async () => {
-        await handlePostSubmit();
-      });
       return;
     }
 
@@ -90,64 +61,96 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   const handlePostSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await onSubmit(content.trim(), selectedImage?.url);
+      const newComment = await commentService.createComment({
+        postId,
+        content: content.trim(),
+        originalImage: selectedImage?.url || undefined,
+        aiGeneratedImage: generatedImageUrl || undefined,
+      });
+
       // Clear form after successful submission
       setContent("");
       setSelectedImageIndex(null);
       setGeneratedImageUrl(null);
-    } catch (error) {
-      console.error("Error submitting comment:", error);
+
+      // Notify parent component
+      onCommentCreated?.(newComment);
+      showToast(ToastType.SUCCESS, "Comment posted successfully");
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error.message || "Failed to post comment");
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleGenerateClick = async () => {
-    if (!content.trim() || !selectedImage || !onGenerate || isSubmitting || disabled) return;
+    if (!content.trim() || !selectedImage || isSubmitting || disabled || isGenerating) return;
 
-    setIsSubmitting(true);
+    setIsGenerating(true);
+    setGeneratingProgress(0);
+
     try {
-      await onGenerate(content.trim(), selectedImage.url);
-      // Don't clear the form - keep content and selected image so user can see the generated image
-      // The generated image URL will be updated by parent component via generatedImageUrl prop
-    } catch (error) {
-      console.error("Error generating image:", error);
+      const result = await commentService.generateImage(
+        content.trim(),
+        selectedImage.url,
+        (progress) => {
+          setGeneratingProgress(progress);
+        }
+      );
+
+      // Store generated image URL
+      setGeneratedImageUrl(result.imageUrl);
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error.message || "Failed to generate image");
     } finally {
-      setIsSubmitting(false);
+      setIsGenerating(false);
+      setGeneratingProgress(0);
     }
   };
 
   const handleGenerateFromModal = async () => {
-    if (!selectedImage || !onGenerate) return;
+    if (!selectedImage) return;
     setShowModal(null);
-    setPendingAction(null);
-    setIsSubmitting(true);
+    setIsGenerating(true);
+    setGeneratingProgress(0);
+
     try {
-      await onGenerate(content.trim(), selectedImage.url);
-      // Don't clear the form - keep content and selected image
-    } catch (error) {
-      console.error("Error generating image:", error);
+      const result = await commentService.generateImage(
+        content.trim(),
+        selectedImage.url,
+        (progress) => {
+          setGeneratingProgress(progress);
+        }
+      );
+
+      // Store generated image URL
+      setGeneratedImageUrl(result.imageUrl);
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error.message || "Failed to generate image");
     } finally {
-      setIsSubmitting(false);
+      setIsGenerating(false);
+      setGeneratingProgress(0);
     }
   };
 
   const canGenerate = !!(
-    onGenerate &&
+    imageUrls.length > 0 &&
     content.trim() &&
     selectedImage &&
+    !generatedImageUrl &&
     !isGenerating &&
     !isSubmitting &&
     !disabled
   );
 
-  const canPost = !!(content.trim() && !isSubmitting && !disabled);
+  const canPost = !!(content.trim() && !isSubmitting && !disabled && !isGenerating);
 
   return (
     <>
       <div className="space-y-3">
         {/* Image Selector - Show if there are images available */}
-        {availableImages.length > 0 && (
+        {availableImages.length > 0 && !generatedImageUrl && (
           <div className="space-y-2">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {/* Option to not select any image */}
@@ -252,27 +255,34 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
           {/* Generated Image Preview - Below input, above buttons */}
           {generatedImageUrl && !isGenerating && (
-            <div className="relative rounded-lg overflow-hidden border-2 border-[#15B8A6] max-w-sm">
-              <img
-                src={generatedImageUrl}
-                alt="Generated image"
-                className="w-full h-auto object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setGeneratedImageUrl(null)}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors shadow-lg"
-                title="Remove generated image"
-              >
-                <XMarkIcon className="w-4 h-4" />
-              </button>
-            </div>
+            <CommentImage
+              aiGeneratedImage={generatedImageUrl}
+              originalImage={selectedImage?.url || undefined}
+              canDelete={true}
+              onDelete={() => setGeneratedImageUrl(null)}
+              className="max-w-sm max-h-auto"
+            />
+            // <div className="relative rounded-lg overflow-hidden border-2 border-[#15B8A6] max-w-sm">
+            //   <img
+            //     src={generatedImageUrl}
+            //     alt="Generated image"
+            //     className="w-full h-auto object-cover"
+            //   />
+            //   <button
+            //     type="button"
+            //     onClick={() => setGeneratedImageUrl(null)}
+            //     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors shadow-lg"
+            //     title="Remove generated image"
+            //   >
+            //     <XMarkIcon className="w-4 h-4" />
+            //   </button>
+            // </div>
           )}
 
           {/* Action Buttons - Right aligned */}
           <div className="flex justify-end gap-2">
-            {/* Generate Button - Always show if onGenerate is provided */}
-            {onGenerate && (
+            {/* Generate Button - Always show if images are available */}
+            {imageUrls.length > 0 && (
               <Button
                 type="button"
                 onClick={handleGenerateClick}
@@ -298,32 +308,11 @@ export const CommentInput: React.FC<CommentInputProps> = ({
         </form>
       </div>
 
-      {/* Modal: Post with generated image - Cancel generated image */}
-      <Modal
-        isOpen={showModal === "post-with-generated"}
-        onClose={() => {
-          setShowModal(null);
-          setPendingAction(null);
-        }}
-        title="Post Comment?"
-        message="You have a generated image. Posting the comment will cancel the generated image. Do you want to continue?"
-        confirmText="Post Comment"
-        cancelText="Cancel"
-        onConfirm={() => {
-          if (pendingAction) {
-            pendingAction();
-          }
-          setPendingAction(null);
-        }}
-        variant="default"
-      />
-
       {/* Modal: Post with selected image - Generate or post without */}
       <Modal
         isOpen={showModal === "post-with-image"}
         onClose={() => {
           setShowModal(null);
-          setPendingAction(null);
         }}
         title="Generate Image?"
         message="You have selected an image. Would you like to generate an AI image first, or post the comment without generating?"
@@ -332,10 +321,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
         onConfirm={handleGenerateFromModal}
         onCancel={() => {
           setShowModal(null);
-          if (pendingAction) {
-            pendingAction();
-          }
-          setPendingAction(null);
+          handlePostSubmit();
         }}
         variant="default"
       />

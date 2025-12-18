@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { EyeIcon, ArrowsRightLeftIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, ArrowsRightLeftIcon, XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Button } from "../common/Button";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { Modal } from "../common/Modal";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,17 +12,22 @@ function cn(...inputs: ClassValue[]) {
 interface CommentImageProps {
   aiGeneratedImage: string;
   originalImage?: string;
+  canDelete?: boolean;
+  onDelete?: () => void;
   className?: string;
 }
 
 export const CommentImage: React.FC<CommentImageProps> = ({
   aiGeneratedImage,
   originalImage,
+  canDelete = false,
+  onDelete,
   className,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -42,24 +48,26 @@ export const CommentImage: React.FC<CommentImageProps> = ({
   return (
     <>
       <div
-        className={cn("relative inline-block rounded-3xl overflow-hidden", className)}
+        className={cn("relative inline-block rounded-3xl overflow-hidden")}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
         <img
           src={aiGeneratedImage}
           alt="AI generated image"
-          className={cn("block object-contain", isLandscape ? "max-w-[200px] max-h-auto" : "max-w-auto max-h-[150px]")}
+          className={cn("block object-contain", isLandscape ? "max-w-[200px] h-auto" : "max-w-auto max-h-[150px]", className)}
         />
         
         {/* Hover overlay with actions */}
         {isHovering && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-2">
             <Button
+              type="button"
               variant="ghost"
               size="medium"
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 setIsPreviewOpen(true);
               }}
               className="p-2 text-white hover:bg-white/80 hover:text-gray-700 rounded-3xl transition-colors"
@@ -69,16 +77,33 @@ export const CommentImage: React.FC<CommentImageProps> = ({
             
             {originalImage && (
               <Button
+                type="button"
                 variant="ghost"
                 size="medium"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   setIsCompareOpen(true);
                 }}
                 className="p-2 text-white hover:bg-white/80 hover:text-gray-700 rounded-3xl transition-colors"
                 leftIcon={ArrowsRightLeftIcon}
               >
               </Button>
+            )}
+
+            {canDelete && onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowModal(true);
+                }}
+                className="p-2 text-white hover:bg-white/80 hover:text-gray-700 rounded-3xl transition-colors"
+                leftIcon={TrashIcon}
+              ></Button>
             )}
           </div>
         )}
@@ -164,6 +189,24 @@ export const CommentImage: React.FC<CommentImageProps> = ({
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+        }}
+        title="Confirm Delete?"
+        message="Are you sure you want to delete this image?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={() => {
+          if (onDelete) {
+            onDelete();
+          }
+          setShowModal(false);
+        }}
+        variant="danger"
+      />
     </>
   );
 };
