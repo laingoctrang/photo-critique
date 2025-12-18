@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SparklesIcon, PhotoIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { SparklesIcon, PhotoIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { Button, Input, Modal } from "../common";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -15,6 +15,7 @@ interface CommentInputProps {
   placeholder?: string;
   imageUrls?: ImageInfo[];
   isGenerating?: boolean;
+  generatingProgress?: number;
   disabled?: boolean;
   generatedImageUrl?: string | null;
   onGeneratedImageChange?: (url: string | null) => void;
@@ -28,6 +29,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   placeholder = "Generate an edit, e.g.",
   imageUrls = [],
   isGenerating = false,
+  generatingProgress = 0,
   disabled = false,
   generatedImageUrl: externalGeneratedImageUrl,
   onGeneratedImageChange,
@@ -207,28 +209,9 @@ export const CommentInput: React.FC<CommentInputProps> = ({
           </div>
         )}
 
-        {/* Generated Image Preview */}
-        {generatedImageUrl && (
-          <div className="relative rounded-lg overflow-hidden border-2 border-[#15B8A6] max-w-sm">
-            <img
-              src={generatedImageUrl}
-              alt="Generated image"
-              className="w-full h-auto object-cover"
-            />
-            <button
-              type="button"
-              onClick={() => setGeneratedImageUrl(null)}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors shadow-lg"
-              title="Remove generated image"
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         {/* Input Form */}
-        <form onSubmit={handlePostClick} className="flex gap-2">
-          <div className="flex-1">
+        <form onSubmit={handlePostClick} className="space-y-3">
+          <div className="w-full">
             <Input
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -241,29 +224,76 @@ export const CommentInput: React.FC<CommentInputProps> = ({
             />
           </div>
 
-          {/* Generate Button - Always show if onGenerate is provided */}
-          {onGenerate && (
-            <Button
-              type="button"
-              onClick={handleGenerateClick}
-              disabled={!canGenerate}
-              isLoading={isGenerating || (isSubmitting && canGenerate)}
-              leftIcon={SparklesIcon}
-              className="shrink-0"
-            >
-              Generate
-            </Button>
+          {/* Generating Progress - Below input, above buttons */}
+          {isGenerating && (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <ArrowPathIcon className="w-6 h-6 text-blue-600 animate-spin" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">
+                      Generating image...
+                    </span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {Math.round(generatingProgress)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${generatingProgress}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* Post Button - Always show */}
-          <Button
-            type="submit"
-            disabled={!canPost}
-            isLoading={isSubmitting}
-            className="shrink-0"
-          >
-            Post
-          </Button>
+          {/* Generated Image Preview - Below input, above buttons */}
+          {generatedImageUrl && !isGenerating && (
+            <div className="relative rounded-lg overflow-hidden border-2 border-[#15B8A6] max-w-sm">
+              <img
+                src={generatedImageUrl}
+                alt="Generated image"
+                className="w-full h-auto object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setGeneratedImageUrl(null)}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors shadow-lg"
+                title="Remove generated image"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Action Buttons - Right aligned */}
+          <div className="flex justify-end gap-2">
+            {/* Generate Button - Always show if onGenerate is provided */}
+            {onGenerate && (
+              <Button
+                type="button"
+                onClick={handleGenerateClick}
+                disabled={!canGenerate}
+                isLoading={isGenerating || (isSubmitting && canGenerate)}
+                leftIcon={SparklesIcon}
+                className="shrink-0"
+              >
+                Generate
+              </Button>
+            )}
+
+            {/* Post Button - Always show */}
+            <Button
+              type="submit"
+              disabled={!canPost}
+              isLoading={isSubmitting}
+              className="shrink-0"
+            >
+              Post
+            </Button>
+          </div>
         </form>
       </div>
 

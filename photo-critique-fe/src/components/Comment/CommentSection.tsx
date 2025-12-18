@@ -50,6 +50,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [mainInputGeneratedImage, setMainInputGeneratedImage] = useState<string | null>(null);
+  const [generatingProgress, setGeneratingProgress] = useState(0);
 
   const isPostAuthor = postAuthorId === user?.id;
 
@@ -155,6 +156,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       const newComment = await commentService.createComment(data);
       setIsGenerating(newComment.id);
       setMainInputGeneratedImage(null); // Reset before generating
+      setGeneratingProgress(0); // Reset progress
 
       // Then generate the image
       try {
@@ -162,7 +164,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           newComment.id,
           content,
           selectedImageUrl,
-          postId
+          postId,
+          (progress) => {
+            setGeneratingProgress(progress);
+          }
         );
 
         // Store generated image URL for the input preview
@@ -189,9 +194,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         );
       } finally {
         setIsGenerating(null);
+        setGeneratingProgress(0);
       }
     } catch (error: any) {
       setIsGenerating(null);
+      setGeneratingProgress(0);
       showToast(ToastType.ERROR, error.message || "Failed to create comment");
       throw error;
     }
@@ -336,6 +343,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           }
           imageUrls={imageUrls}
           isGenerating={!!isGenerating}
+          generatingProgress={generatingProgress}
           placeholder="Generate an edit, e.g."
           generatedImageUrl={mainInputGeneratedImage}
           onGeneratedImageChange={setMainInputGeneratedImage}
