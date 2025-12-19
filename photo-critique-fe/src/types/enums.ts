@@ -7,26 +7,28 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 export const AppTab = {
   // Common tabs
-  HOME: '/',
-  FEED: '/feed',
-  EXPLORE: '/explore',
-  RANKING: '/ranking',
-  DIRECT: '/direct',
-  PROFILE: '/profile',
-  CREATE: '/create',
+  HOME: 'home',
+  FEED: 'feed',
+  EXPLORE: 'explore',
+  RANKING: 'ranking',
+  DIRECT: 'direct',
+  PROFILE: 'profile',
+  CREATE: 'create',
 
   // Admin tabs
-  ADMIN_DASHBOARD: '/admin',
-  USER_MANAGEMENT: '/admin/users',
-  POST_MANAGEMENT: '/admin/posts',
-  CONTENT_MODERATION: '/admin/content',
-  ANALYTICS: '/admin/analytics',
-  SYSTEM_SETTINGS: '/admin/settings',
+  ADMIN_DASHBOARD: 'dashboard',
+  USER_MANAGEMENT: 'user-management',
+  POST_MANAGEMENT: 'post-management',
+  BADGE_MANAGEMENT: 'badge-management',
+  XP_CONFIG_MANAGEMENT: 'xp-config-management',
+  CONTENT_MODERATION: 'content-moderation',
+  ANALYTICS: 'analytics',
+  SYSTEM_SETTINGS: 'system-settings',
 
   // Moderator tabs
-  MOD_DASHBOARD: '/moderator',
-  POST_REVIEW: '/moderator/posts',
-  REPORTS: '/moderator/reports',
+  MOD_DASHBOARD: 'mod-dashboard',
+  POST_REVIEW: 'post-review',
+  REPORTS: 'reports',
 } as const;
 export type AppTab = typeof AppTab[keyof typeof AppTab];
 

@@ -12,6 +12,8 @@ import {
   ClipboardDocumentListIcon,
   FlagIcon,
   GlobeAltIcon,
+  SparklesIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 
 import { UserRole, AppTab, TabCategory, type MenuItem } from "../types/enums";
@@ -73,7 +75,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: ChartPieIcon,
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
-    path: "/admin",
+    path: "/admin/dashboard",
   },
   {
     id: AppTab.USER_MANAGEMENT,
@@ -82,6 +84,22 @@ export const SIDEBAR_MENU: MenuItem[] = [
     category: TabCategory.ADMIN,
     roles: [UserRole.ADMIN],
     path: "/admin/user-management",
+  },
+  {
+    id: AppTab.BADGE_MANAGEMENT,
+    label: "Badge Management",
+    icon: ChartBarIcon,
+    category: TabCategory.ADMIN,
+    roles: [UserRole.ADMIN],
+    path: "/admin/badge-management",
+  },
+  {
+    id: AppTab.XP_CONFIG_MANAGEMENT,
+    label: "XP Config Management",
+    icon: SparklesIcon,
+    category: TabCategory.ADMIN,
+    roles: [UserRole.ADMIN],
+    path: "/admin/xp-config-management",
   },
   {
     id: AppTab.POST_MANAGEMENT,
