@@ -8,7 +8,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -45,6 +44,9 @@ public class Comment {
 
     @Field("ai_generated_image")
     private String aiGeneratedImage;
+
+    @Field("original_image")
+    private String originalImage;
 
     @Field("parent_comment_id")
     private String parentCommentId;

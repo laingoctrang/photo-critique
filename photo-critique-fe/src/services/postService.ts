@@ -3,8 +3,8 @@ import { api } from './api';
 import type { ApiResponse, ImageInfo } from './types';
 
 interface CreatePostRequest {
-    imageUrls: ImageInfo[];
-    caption: string;
+    imageUrls?: ImageInfo[];
+    caption?: string;
     privacy: PrivacyType;
     tags?: string[];
 }

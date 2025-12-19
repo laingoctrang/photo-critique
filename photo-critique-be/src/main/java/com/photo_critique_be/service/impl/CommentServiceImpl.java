@@ -80,6 +80,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setContent(request.getContent());
         comment.setParentCommentId(request.getParentCommentId());
         comment.setAiGeneratedImage(request.getAiGeneratedImage());
+        comment.setOriginalImage(request.getOriginalImage());
         comment.setIsHelpful(false);
         comment.setLikesCount(0);
         comment.setCreatedAt(LocalDateTime.now());
@@ -289,6 +290,7 @@ public class CommentServiceImpl implements CommentService {
                 .user(userResponse)
                 .content(comment.getContent())
                 .aiGeneratedImage(comment.getAiGeneratedImage())
+                .originalImage(comment.getOriginalImage())
                 .parentCommentId(comment.getParentCommentId())
                 .isHelpful(comment.getIsHelpful())
                 .likesCount(comment.getLikesCount())

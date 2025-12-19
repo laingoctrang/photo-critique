@@ -46,14 +46,14 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleCancel}
+        onClick={onClose}
       />
 
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
         {/* Close button */}
         <button
-          onClick={handleCancel}
+          onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <XMarkIcon className="w-6 h-6" />

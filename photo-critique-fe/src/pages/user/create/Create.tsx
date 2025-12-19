@@ -63,8 +63,8 @@ export const Create = () => {
   const handleSubmit = async (isDraft: boolean = false) => {
     // Validate files
     const completedFiles = files.filter((f) => f.status === "completed" && f.imageInfo);
-    if (completedFiles.length === 0 && !isDraft) {
-      showToast(ToastType.ERROR, "Please upload at least one image");
+    if ((completedFiles.length === 0 && !caption.trim()) && !isDraft) {
+      showToast(ToastType.ERROR, "Please upload at least one image or add a caption");
       return;
     }
 
@@ -77,7 +77,7 @@ export const Create = () => {
 
     // Check if all completed images have been moderated
     const completedImageFiles = completedFiles.filter(
-      (f) => f.imageInfo?.contentType.startsWith("image/")
+      (f) => f.imageInfo?.contentType?.startsWith("image/")
     );
     const unmoderatedFiles = completedImageFiles.filter(
       (f) => !f.moderationResult
@@ -134,8 +134,8 @@ export const Create = () => {
 
       // Create post
       const response = await postService.createPost({
-        imageUrls: imageInfos,
-        caption: caption.trim(),
+        imageUrls: imageInfos || undefined,
+        caption: caption.trim() || undefined,
         privacy,
         tags: tags.length > 0 ? tags : undefined,
       });
@@ -272,11 +272,11 @@ export const Create = () => {
                 disabled={
                   isSubmitting ||
                   isSavingDraft ||
-                  files.length === 0 ||
+                  (files.length === 0 && !caption.trim()) ||
                   files.some(
                     (f) =>
                       f.status === "completed" &&
-                      f.imageInfo?.contentType.startsWith("image/") &&
+                      f.imageInfo?.contentType?.startsWith("image/") &&
                       (!f.moderationResult ||
                         !f.moderationResult.allowed)
                   )

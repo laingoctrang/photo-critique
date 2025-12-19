@@ -67,7 +67,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         "h-14 text-lg p-4": size === "large",
         // Variants
         "border rounded-4xl focus:ring-2": variant === "outline",
-        "border-gray-300 focus:border-[#15B8A6] focus:ring-[#15B8A6]/20":
+        "border-gray-300 hover:bg-gray-50 focus:border-[#15B8A6] focus:ring-[#15B8A6]/20":
           variant === "outline" && !error && !success,
         "bg-gray-50 border border-transparent rounded-4xl focus:bg-white focus:border-[#15B8A6] focus:ring-2 focus:ring-[#15B8A6]/20":
           variant === "filled",

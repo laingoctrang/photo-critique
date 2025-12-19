@@ -1,4 +1,5 @@
 import { api } from './api';
+import axios from 'axios';
 import type { ApiResponse } from './types';
 
 export interface CommentUser {
@@ -15,6 +16,7 @@ export interface CommentResponse {
   user: CommentUser;
   content: string;
   aiGeneratedImage?: string;
+  originalImage?: string;
   parentCommentId?: string;
   isHelpful: boolean;
   likesCount: number;
@@ -28,7 +30,8 @@ export interface CreateCommentRequest {
   postId: string;
   content: string;
   parentCommentId?: string;
-  selectedImageUrl?: string; // URL of selected image for AI generation
+  aiGeneratedImage?: string;
+  originalImage?: string;
 }
 
 export interface UpdateCommentRequest {
@@ -66,7 +69,12 @@ export const commentService = {
   ): Promise<CommentResponse> => {
     const response = await api.post<ApiResponse<CommentResponse>>(
       `/posts/${data.postId}/comments`,
-      { content: data.content, parentCommentId: data.parentCommentId, selectedImageUrl: data.selectedImageUrl }
+      { 
+        content: data.content, 
+        parentCommentId: data.parentCommentId, 
+        aiGeneratedImage: data.aiGeneratedImage,
+        originalImage: data.originalImage 
+      }
     );
     return response.data.data;
   },
@@ -117,36 +125,73 @@ export const commentService = {
   },
 
   generateImage: async (
-    commentId: string,
+    // _commentId: string,
     prompt: string,
     imageUrl: string,
-    postId: string
+    // _postId: string,
+    onProgress?: (progress: number) => void
   ): Promise<{ imageUrl: string }> => {
-    // Fake API implementation - simulate image generation with delay
-    // Replace this with real API call when backend is ready
-    const USE_FAKE_API = import.meta.env.VITE_USE_FAKE_GENERATE_API === 'true' || 
-                         !import.meta.env.VITE_APP_BASE_URL;
-    
-    if (USE_FAKE_API) {
-      // Simulate API delay (2-4 seconds)
-      const delay = 2000 + Math.random() * 2000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
-      // Generate a fake image URL using a placeholder service
-      // Using picsum.photos for demo purposes
-      const width = 800;
-      const height = 600;
-      const seed = Date.now() + Math.random();
-      const fakeImageUrl = `https://picsum.photos/seed/${seed}/${width}/${height}`;
-      
-      return { imageUrl: fakeImageUrl };
-    }
-    
-    // Real API call
-    const response = await api.post<ApiResponse<{ imageUrl: string }>>(
-      `/posts/${postId}/comments/${commentId}/generate-image`,
-      { prompt, imageUrl }
+    // Call external edit-image API
+    const response = await axios.post<{ task_id: string; image_url?: string | null }>(
+      // 'https://biform-relatedly-lera.ngrok-free.dev/edit-image',
+      'https://fastapi-qwen-test.onrender.com/edit-image',
+      {
+        image_url: imageUrl,
+        prompt: prompt,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      }
     );
-    return response.data.data;
+
+    const taskId = response.data.task_id;
+    if (!taskId) {
+      throw new Error('Failed to generate image: No task_id in response');
+    }
+
+    // If image_url is already available, return it
+    if (response.data.image_url) {
+      return { imageUrl: response.data.image_url };
+    }
+
+    // Poll for progress
+    return new Promise((resolve, reject) => {
+      const pollInterval = setInterval(async () => {
+        try {
+          const progressResponse = await axios.get<{
+            task_id: string;
+            progress: number;
+            image_url?: string;
+          // }>(`https://biform-relatedly-lera.ngrok-free.dev/progress/${taskId}`, {
+          }>(`https://fastapi-qwen-test.onrender.com/progress/${taskId}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          });
+
+          const progress = progressResponse.data.progress || 0;
+          onProgress?.(progress);
+
+          // If image_url is available, generation is complete
+          if (progressResponse.data.image_url) {
+            clearInterval(pollInterval);
+            resolve({ imageUrl: progressResponse.data.image_url });
+          }
+        } catch (error: any) {
+          clearInterval(pollInterval);
+          reject(new Error(error.message || 'Failed to check generation progress'));
+        }
+      }, 1000); // Poll every 1 second
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        reject(new Error('Image generation timeout'));
+      }, 5 * 60 * 1000);
+    });
   },
 };

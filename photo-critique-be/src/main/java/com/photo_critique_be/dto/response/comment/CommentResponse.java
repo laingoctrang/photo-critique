@@ -16,6 +16,7 @@ public class CommentResponse {
     private UserPostResponse user;
     private String content;
     private String aiGeneratedImage;
+    private String originalImage;
     private String parentCommentId;
     private Boolean isHelpful;
     private Integer likesCount;

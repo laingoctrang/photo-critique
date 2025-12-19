@@ -5,7 +5,7 @@ import { Header, Sidebar } from "../components";
 
 export const Layout = () => {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F6F8]">
+    <div className="flex h-screen overflow-hidden bg-[#F5F6F8] px-2">
       <div className="p-4">
         <Sidebar />
       </div>
