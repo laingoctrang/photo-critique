@@ -78,12 +78,10 @@ export const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
       className,
       searchable = false,
       lazyLoad = false,
-      pageSize = 10,
       direction = "down",
       renderOption,
       renderValue,
     },
-    ref
   ) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
