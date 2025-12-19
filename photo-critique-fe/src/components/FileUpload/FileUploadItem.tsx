@@ -14,6 +14,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { ImageInfo } from "../../services/types";
 import type { ModerationResult } from "../../services/moderationService";
+import { Button } from "../common";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -37,6 +38,8 @@ interface FileUploadItemProps {
   onPreview?: (item: FileUploadItemData) => void;
   onViolationClick?: (item: FileUploadItemData) => void;
   isDragging?: boolean;
+  variant?: "default" | "compact" | "icon" | "square"; // UI variant
+  className?: string;
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -64,9 +67,12 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
   onPreview,
   onViolationClick,
   isDragging = false,
+  variant = "default",
+  className,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(item.title || "");
+  const [isHovering, setIsHovering] = useState(false);
 
   const fileSize = item.imageInfo?.size || item.file?.size || 0;
   const contentType = item.imageInfo?.contentType || item.file?.type || "";
@@ -128,7 +134,94 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
   };
 
   const isViolating = item.moderationResult && !item.moderationResult.allowed;
+  const isCompact = variant === "icon" || variant === "square" || variant === "compact";
+  const sizeClass = variant === "icon" ? "w-10 h-10" : variant === "square" ? "w-16 h-16" : variant === "compact" ? "w-20 h-20" : "w-16 h-16";
 
+  // Compact variant - only show image/icon with hover actions
+  if (isCompact) {
+    return (
+      <div
+        className={cn(
+          "relative rounded-lg border-2 transition-all overflow-hidden",
+          sizeClass,
+          isDragging
+            ? "border-[#15B8A6] bg-[#F0FDFA] opacity-50"
+            : isViolating
+            ? "border-red-500 bg-red-50"
+            : "border-gray-200 bg-white hover:border-gray-300 cursor-pointer",
+          className
+        )}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        {contentType.startsWith("image/") && previewUrl ? (
+          <>
+            <img
+              src={previewUrl}
+              alt={item.title || "Preview"}
+              className="w-full h-full object-cover"
+            />
+            {item.status === "uploading" && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <ArrowPathIcon className="w-4 h-4 text-white animate-spin" />
+              </div>
+            )}
+            {isViolating && (
+              <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-4 h-4 text-red-600" />
+              </div>
+            )}
+            {/* Hover overlay with actions */}
+            {item.status !== "uploading" && isHovering && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-2">
+                {onPreview && item.status === "completed" && (
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPreview(item);
+                    }}
+                    className="p-1.5 bg-white/90 hover:bg-white text-gray-700 rounded-3xl transition-colors"
+                    leftIcon={PhotoIcon}
+                  >
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item.id);
+                  }}
+                  className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-3xl transition-colors"
+                  leftIcon={TrashIcon}
+                >
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center relative">
+            <Icon className={cn(
+              variant === "icon" ? "w-5 h-5" : variant === "square" ? "w-8 h-8" : "w-10 h-10",
+              "text-gray-400"
+            )} />
+            {item.status === "uploading" && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <ArrowPathIcon className={cn(
+                  variant === "icon" ? "w-4 h-4" : "w-5 h-5",
+                  "text-white animate-spin"
+                )} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Default variant - show full information
   return (
     <div
       className={cn(
@@ -137,7 +230,8 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
           ? "border-[#15B8A6] bg-[#F0FDFA] opacity-50"
           : isViolating
           ? "border-red-500 bg-red-50"
-          : "border-gray-200 bg-white hover:border-gray-300 cursor-move"
+          : "border-gray-200 bg-white hover:border-gray-300 cursor-move",
+        className
       )}
     >
       {/* File Icon/Preview */}

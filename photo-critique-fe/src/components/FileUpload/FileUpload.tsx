@@ -22,6 +22,9 @@ interface FileUploadProps {
   maxFiles?: number;
   acceptedTypes?: string;
   maxSize?: number; // in bytes
+  variant?: "default" | "compact" | "icon" | "square"; // UI variant
+  className?: string; // className for drop zone
+  itemClassName?: string; // className for file items
 }
 
 
@@ -33,6 +36,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   maxFiles = 10,
   acceptedTypes = "image/*",
   maxSize = 10 * 1024 * 1024, // 10MB default
+  variant = "default",
+  className,
+  itemClassName,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<FileUploadItemData[]>(files);
@@ -121,7 +127,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onFilesChange(updatedFiles);
 
           // Check moderation for images
-          if (imageInfo.contentType.startsWith("image/") && imageInfo.url) {
+          if (imageInfo.contentType?.startsWith("image/") && imageInfo.url) {
             try {
               const moderationResponse = await moderationService.moderateBatch([
                 imageInfo.url,
@@ -259,17 +265,90 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setDragOverIndex(null);
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Drop Zone */}
-      {files.length < maxFiles && (
-        <div
-          className={cn(
-            "border-2 border-dashed rounded-lg p-8 text-center transition-all",
+  // Render drop zone based on variant
+  const renderDropZone = () => {
+    if (files.length >= maxFiles) return null;
+
+    const baseClasses = cn(
+      "border-2 border-dashed rounded-lg transition-all cursor-pointer",
             isDragging
               ? "border-[#15B8A6] bg-[#F0FDFA]"
               : "border-gray-300 bg-gray-50 hover:border-gray-400"
-          )}
+    );
+
+    switch (variant) {
+      case "icon":
+        return (
+          <div
+            className={cn(baseClasses, "w-10 h-10 flex items-center justify-center", className)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleBrowseClick}
+            title="Upload file"
+          >
+            <PhotoIcon className="w-5 h-5 text-gray-400" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={acceptedTypes}
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+          </div>
+        );
+
+      case "square":
+        return (
+          <div
+            className={cn(baseClasses, "w-16 h-16 flex items-center justify-center", className)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleBrowseClick}
+            title="Upload file"
+          >
+            <PhotoIcon className="w-6 h-6 text-gray-400" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={acceptedTypes}
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+          </div>
+        );
+
+      case "compact":
+        return (
+          <div
+            className={cn(baseClasses, "p-3 flex items-center justify-center", className)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleBrowseClick}
+            title="Upload file"
+          >
+            <CloudArrowUpIcon className="w-6 h-6 text-gray-400 mr-2" />
+            <span className="text-sm text-gray-600">Upload</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={acceptedTypes}
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+          </div>
+        );
+
+      case "default":
+      default:
+        return (
+          <div
+            className={cn(baseClasses, "p-8 text-center", className)}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -298,7 +377,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             className="hidden"
           />
         </div>
-      )}
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Drop Zone */}
+      {renderDropZone()}
 
       {/* File List */}
       {files.length > 0 && (
@@ -325,6 +411,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 onPreview={onPreview}
                 onViolationClick={onViolationClick}
                 isDragging={draggedIndex === index}
+                variant={variant}
+                className={itemClassName}
               />
             </div>
           ))}

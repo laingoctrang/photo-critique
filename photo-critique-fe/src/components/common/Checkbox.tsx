@@ -111,7 +111,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             )}
           >
             {checked && !indeterminate && (
-              <CheckIcon className={cn(currentSize.icon, "text-white")} />
+              <CheckIcon className={cn(currentSize.icon, "text-white stroke-[3.5]")} />
             )}
             {indeterminate && (
               <div className={cn("bg-white", "h-0.5 w-2/3 rounded")} />

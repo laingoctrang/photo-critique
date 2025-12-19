@@ -1,14 +1,16 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftStartOnRectangleIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import { SIDEBAR_MENU } from "../../constants";
 import { TabCategory, UserRole, type MenuItem } from "../../types";
 import { useAuth } from "../../hooks";
-import { Modal } from "../common";
+import { Button, Modal } from "../common";
 
 
 interface SidebarProps {
   className?: string;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
 }
 
 const getMenuTabsByRoles = (roles: UserRole[]) => {
@@ -27,7 +29,7 @@ const getMenuItemsGroupedByCategory = (roles: UserRole[]) => {
   };
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ className = "", isCollapsed = false, onToggle }) => {
   const { user } = useAuth();
   if (!user || !user.roles || user.roles.length === 0) return null;
 
@@ -35,16 +37,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
 
   return (
     <div
-      className={`sidebar bg-white h-full flex flex-col w-80 rounded-3xl shadow-sm ${className}`}
+      className={`sidebar bg-white h-full flex flex-col ${isCollapsed ? "w-20" : "w-80"} rounded-3xl shadow-sm transition-all duration-300 ${className}`}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-3 p-5 pb-5">
-        <div className="relative">
-          <img src="/logo.png" alt="Logo" className="h-9 w-9 object-cover rounded-xl" />
+      {/* Logo with Toggle Button */}
+      <div className={`flex items-center ${isCollapsed ? "flex-col justify-center gap-2" : "justify-between"} p-5 pb-5 border-b border-gray-100`}>
+        <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
+          <div className="relative">
+            <img src="/logo.png" alt="Logo" className="h-9 w-9 object-cover rounded-xl" />
+          </div>
+          {!isCollapsed && (
+            <span className="font-bold text-xl bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] bg-clip-text text-transparent">
+              PhotoVerse
+            </span>
+          )}
         </div>
-        <span className="font-bold text-xl bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] bg-clip-text text-transparent">
-          PhotoVerse
-        </span>
+        
+        {/* Toggle Button */}
+        {onToggle && (
+          <Button
+            variant="ghost"
+            size="medium"
+            className="p-2"
+            onClick={onToggle}
+            aria-label="Toggle sidebar"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            leftIcon={isCollapsed ? ChevronDoubleRightIcon : ChevronDoubleLeftIcon}
+          >
+          </Button>
+        )}
       </div>
 
       {/* Navigation Menu */}
@@ -54,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           <div>
             <ul className="space-y-1.5">
               {menuItems.main.map((item) => (
-                <MenuItem key={item.id} item={item} />
+                <MenuItem key={item.id} item={item} isCollapsed={isCollapsed} />
               ))}
             </ul>
           </div>
@@ -63,16 +83,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         {/* Admin Section */}
         {menuItems.admin.length > 0 && (
           <div>
-            <div className="flex items-center mb-3 px-2">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1 bg-gray-100/80 rounded-full">
-                Administration
-              </h4>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-            </div>
+            {!isCollapsed && (
+              <div className="flex items-center mb-3 px-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1 bg-gray-100/80 rounded-full">
+                  Administration
+                </h4>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+              </div>
+            )}
             <ul className="space-y-1.5">
               {menuItems.admin.map((item) => (
-                <MenuItem key={item.id} item={item} />
+                <MenuItem key={item.id} item={item} isCollapsed={isCollapsed} />
               ))}
             </ul>
           </div>
@@ -81,16 +103,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         {/* Moderator Section */}
         {menuItems.moderator.length > 0 && (
           <div>
-            <div className="flex items-center mb-3 px-2">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1 bg-gray-100/80 rounded-full">
-                Moderation
-              </h4>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-            </div>
+            {!isCollapsed && (
+              <div className="flex items-center mb-3 px-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1 bg-gray-100/80 rounded-full">
+                  Moderation
+                </h4>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+              </div>
+            )}
             <ul className="space-y-1.5">
               {menuItems.moderator.map((item) => (
-                <MenuItem key={item.id} item={item} />
+                <MenuItem key={item.id} item={item} isCollapsed={isCollapsed} />
               ))}
             </ul>
           </div>
@@ -98,37 +122,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       </nav>
 
       {/* Footer */}
-      <SidebarFooter />
+      <SidebarFooter isCollapsed={isCollapsed} />
     </div>
   );
 };
 
 // Reusable MenuItem using NavLink for SPA + active class
-const MenuItem: React.FC<{ item: MenuItem }> = ({ item }) => {
+const MenuItem: React.FC<{ item: MenuItem; isCollapsed?: boolean }> = ({ item, isCollapsed = false }) => {
   const Icon = item.icon;
   return (
     <li>
       <NavLink
         to={item.path}
         className={({ isActive }) =>
-          `w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group relative ${isActive
+          `w-full flex items-center ${isCollapsed ? "justify-center px-2" : "space-x-3 px-4"} py-3 rounded-xl transition-all duration-300 group relative ${isActive
             ? `bg-gradient-to-r from-[#15B8A6]/10 to-[#15B8A6]/5 text-[#0E7C70] font-medium 
-                 shadow-[0_2px_10px_-2px_rgba(21,184,166,0.2)] border-l-3 border-[#15B8A6]}`
+                 shadow-[0_2px_10px_-2px_rgba(21,184,166,0.2)] ${isCollapsed ? "" : "border-l-3"} border-[#15B8A6]}`
             : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 hover:translate-x-1"
-          }`
-        }
+          }`}
+        title={isCollapsed ? item.label : undefined}
       >
         <Icon className="w-5 h-5 flex-shrink-0 transition-colors text-[#15B8A6]" />
-        <div className="flex-1 text-left">
-          <div className="font-medium">{item.label}</div>
-        </div>
-        <div className="w-2 h-2 bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        {!isCollapsed && (
+          <>
+            <div className="flex-1 text-left">
+              <div className="font-medium">{item.label}</div>
+            </div>
+            <div className="w-2 h-2 bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </>
+        )}
       </NavLink>
     </li>
   );
 };
 
-const SidebarFooter: React.FC = () => {
+const SidebarFooter: React.FC<{ isCollapsed?: boolean }> = ({ isCollapsed = false }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
@@ -145,18 +173,20 @@ const SidebarFooter: React.FC = () => {
   return (
     <>
       <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center">
+        <div className={`flex items-center ${isCollapsed ? "justify-center" : ""}`}>
           <button
             onClick={handleLogout}
-            className="w-fit h-10 px-4 flex items-center gap-3 text-gray-500 transition-colors duration-300 group cursor-pointer"
-            title="Logout"
+            className={`${isCollapsed ? "px-2" : "px-4"} h-10 flex items-center gap-3 text-gray-500 transition-colors duration-300 group cursor-pointer`}
+            title={isCollapsed ? "Logout" : undefined}
           >
             <ArrowLeftStartOnRectangleIcon
               className="w-5 h-5 text-gray-500 group-hover:text-[#15B8A6] transition-colors"
             />
-            <span className="font-medium group-hover:text-[#15B8A6]">
-              Logout
-            </span>
+            {!isCollapsed && (
+              <span className="font-medium group-hover:text-[#15B8A6]">
+                Logout
+              </span>
+            )}
           </button>
         </div>
       </div>
