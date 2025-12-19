@@ -29,31 +29,46 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const handleCancel = () => {
+  const handleCancel = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (onCancel) {
       onCancel();
     }
     onClose();
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     onConfirm();
     onClose();
   };
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleCancel();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={handleBackdropClick}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div 
+        className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={(e) => handleCancel(e)}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <XMarkIcon className="w-6 h-6" />
@@ -70,7 +85,7 @@ export const Modal: React.FC<ModalProps> = ({
           {showCancel && (
             <Button
               variant="outline"
-              onClick={handleCancel}
+              onClick={(e) => handleCancel(e)}
               className="shrink-0"
             >
               {cancelText}
@@ -78,7 +93,7 @@ export const Modal: React.FC<ModalProps> = ({
           )}
           <Button
             variant={variant === "danger" ? "danger" : "primary"}
-            onClick={handleConfirm}
+            onClick={(e) => handleConfirm(e)}
             className="shrink-0"
           >
             {confirmText}
