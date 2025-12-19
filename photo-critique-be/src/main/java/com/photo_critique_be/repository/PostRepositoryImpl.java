@@ -60,7 +60,8 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 "from: 'users', " +
                 "let: { uid: '$user_id' }, " +
                 "pipeline: [ " +
-                    "{ $match: { $expr: { $eq: [{ $toString: '$_id' }, { $toString: '$$uid' }] } } } " +
+                    "{ $match: { $expr: { $eq: [{ $toString: '$_id' }, '$$uid'] } } } " +
+                    "{ $addFields: { idString: { $toString: '$_id' } } }" +
                 "], " +
                 "as: 'userInfo' " +
             "} }"
@@ -90,7 +91,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         String lookupSaved = String.format(
             "{ $lookup: " +
                 "{ from: 'saved_posts', " +
-                "let: { pid: '$_id' }, " +
+                "let: { pid: { $toString: '$_id' } }, " +
                 "pipeline: [ " +
                     "{ $match: { $expr: { $and: [ " +
                         "{ $eq: ['$post_id','$$pid'] }, " +
@@ -108,7 +109,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         String lookupUserReaction = String.format(
             "{ $lookup: { " +
                 "from: 'reactions', " +
-                "let: { pid: '$_id' }, " +
+                "let: { pid: { $toString: '$_id' } }, " +
                 "pipeline: [ " +
                     "{ $match: { $expr: { $and: [ " +
                         "{ $eq: ['$target_id', '$$pid'] }, " +
@@ -128,7 +129,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         // - isSaved = userReaction ? null
         ProjectionOperation project = Aggregation.project()
                 .andExpression("toString(_id)").as("id")
-                .and("userInfo._id").as("user.id")
+                .andExpression("toString(userInfo._id)").as("user.id")
                 .and("userInfo.username").as("user.username")
                 .and("userInfo.profile_picture").as("user.profilePicture")
                 .and("userInfo.full_name").as("user.fullName")

@@ -1,10 +1,15 @@
 package com.photo_critique_be.dto.response.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @Data
 public class UserPostResponse {
+    @Field("id")  // Add this for MongoDB mapping
+    @JsonProperty("id")  // Keep this for JSON
     private String id;
+
     private String username;
     private String profilePicture;
     private String fullName;
