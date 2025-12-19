@@ -1,7 +1,9 @@
 package com.photo_critique_be.service.impl;
 
+import com.photo_critique_be.dto.response.xp.XPEventResponse;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.exception.ResourceNotFoundException;
+import com.photo_critique_be.mapper.XPEventMapper;
 import com.photo_critique_be.model.User;
 import com.photo_critique_be.model.XPConfig;
 import com.photo_critique_be.model.XPEvent;
@@ -12,8 +14,13 @@ import com.photo_critique_be.service.XPConfigService;
 import com.photo_critique_be.service.XPEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,6 +31,7 @@ public class XPEventServiceImpl implements XPEventService {
     private final XPEventRepository xpEventRepository;
     private final UserRepository userRepository;
     private final LanguageService languageService;
+    private final XPEventMapper xpEventMapper;
 
     @Transactional
     public void awardXP(String userId, String eventType, String postId, String commentId) {
@@ -62,6 +70,28 @@ public class XPEventServiceImpl implements XPEventService {
     public Integer getUserTotalXP(String userId) {
         return 0;
 //        return xpEventRepository.sumPointsByUserId(userId).intValue();
+    }
+
+    @Override
+    public List<XPEventResponse> getRecentXPEvents(String userId, int limit) {
+        log.debug("Fetching recent XP events for user: {} with limit: {}", userId, limit);
+        List<XPEvent> events = xpEventRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        
+        // Limit the results
+        if (limit > 0 && events.size() > limit) {
+            events = events.subList(0, limit);
+        }
+        
+        return events.stream()
+                .map(xpEventMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<XPEventResponse> getAllXPEvents(String userId, Pageable pageable) {
+        log.debug("Fetching all XP events for user: {} with page: {}", userId, pageable.getPageNumber());
+        Page<XPEvent> events = xpEventRepository.findByUserId(userId, pageable);
+        return events.map(xpEventMapper::toResponse);
     }
 
     private int calculateLevel(int xpPoints) {

@@ -81,6 +81,10 @@ public enum MessageCode {
 
     // BADGE
     BADGE_NOT_FOUND("badge.not.found"),
+    BADGE_RETRIEVED("badge.retrieved"),
+    BADGE_CREATED("badge.created"),
+    BADGE_UPDATED("badge.updated"),
+    BADGE_DELETED("badge.deleted"),
 
     // TAG
     TAG_CREATED_SUCCESS("tag.created.success"),
@@ -148,10 +152,11 @@ public enum MessageCode {
     XP_AWARDED_SUCCESS("xp.awarded.success"),
     XP_AWARDED_FAILED("xp.awarded.failed"),
     XP_CONFIG_NOT_FOUND("xp.config.not.found"),
-    XP_CONFIG_CREATED_SUCCESS("xp.config.created.success"),
-    XP_CONFIG_UPDATED_SUCCESS("xp.config.updated.success"),
-    XP_CONFIG_DELETED_SUCCESS("xp.config.deleted.success"),
-    XP_CONFIG_RETRIEVED_SUCCESS("xp.config.retrieved.success");
+    XP_CONFIG_CREATED("xp.config.created"),
+    XP_CONFIG_UPDATED("xp.config.updated"),
+    XP_CONFIG_DELETED("xp.config.deleted"),
+    XP_CONFIG_RETRIEVED("xp.config.retrieved"),
+    XP_EVENT_RETRIEVED("xp.event.retrieved");
 
     private final String code;
 

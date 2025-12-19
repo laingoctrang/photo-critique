@@ -15,6 +15,7 @@ import com.photo_critique_be.service.AuthService;
 import com.photo_critique_be.config.security.jwt.JwtService;
 import com.photo_critique_be.service.LanguageService;
 import com.photo_critique_be.service.OtpService;
+import com.photo_critique_be.util.AvatarUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -24,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthServiceIml implements AuthService {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final UserDetailsServiceImpl userDetailsService;
@@ -33,6 +34,7 @@ public class AuthServiceIml implements AuthService {
     private final JwtService jwtService;
     private final LanguageService languageService;
     private final OtpService otpService;
+    private final AvatarUtil avatarUtil;
 
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
@@ -91,6 +93,9 @@ public class AuthServiceIml implements AuthService {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setFullName(registerRequest.getFullName());
+
+        String randomAvatarUrl = avatarUtil.generateRandomAvatar(user.getEmail());
+        user.setProfilePicture(randomAvatarUrl);
 
         // Save user
         User savedUser = userRepository.save(user);

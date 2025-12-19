@@ -1,6 +1,8 @@
 package com.photo_critique_be.service.impl;
 
+import com.photo_critique_be.dto.request.badge.BadgeRequest;
 import com.photo_critique_be.dto.response.badge.BadgeEarnedResponse;
+import com.photo_critique_be.dto.response.badge.BadgeResponse;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.exception.ResourceNotFoundException;
 import com.photo_critique_be.mapper.BadgeMapper;
@@ -10,10 +12,12 @@ import com.photo_critique_be.repository.BadgeRepository;
 import com.photo_critique_be.service.BadgeService;
 import com.photo_critique_be.service.LanguageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BadgeServiceImpl implements BadgeService {
@@ -50,5 +54,72 @@ public class BadgeServiceImpl implements BadgeService {
                 .toList();
 
         return badgesEarnedResponse;
+    }
+
+    @Override
+    public List<BadgeResponse> getAllBadges() {
+        log.debug("Fetching all badges");
+        return badgeRepository.findAll().stream()
+                .map(badgeMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public BadgeResponse getBadgeById(String id) {
+        log.debug("Fetching badge with id: {}", id);
+        Badge badge = badgeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.BADGE_NOT_FOUND)));
+        return badgeMapper.toResponse(badge);
+    }
+
+    @Override
+    public BadgeResponse createBadge(BadgeRequest request) {
+        log.info("Creating badge: {}", request.getName());
+        
+        if (badgeRepository.existsByName(request.getName())) {
+            throw new ResourceNotFoundException("Badge with name already exists");
+        }
+
+        Badge badge = new Badge();
+        badge.setName(request.getName());
+        badge.setDescription(request.getDescription());
+        badge.setIconUrl(request.getIconUrl());
+        badge.setXpThreshold(request.getXpThreshold());
+        badge.setLevel(request.getLevel());
+
+        Badge saved = badgeRepository.save(badge);
+        log.info("Badge created with id: {}", saved.getId());
+        return badgeMapper.toResponse(saved);
+    }
+
+    @Override
+    public BadgeResponse updateBadge(String id, BadgeRequest request) {
+        log.info("Updating badge with id: {}", id);
+        
+        Badge badge = badgeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.BADGE_NOT_FOUND)));
+
+        if (badgeRepository.existsByNameAndIdNot(request.getName(), id)) {
+            throw new ResourceNotFoundException("Badge with name already exists");
+        }
+
+        badge.setName(request.getName());
+        badge.setDescription(request.getDescription());
+        badge.setIconUrl(request.getIconUrl());
+        badge.setXpThreshold(request.getXpThreshold());
+        badge.setLevel(request.getLevel());
+
+        Badge saved = badgeRepository.save(badge);
+        log.info("Badge updated: {}", saved.getId());
+        return badgeMapper.toResponse(saved);
+    }
+
+    @Override
+    public void deleteBadge(String id) {
+        log.info("Deleting badge with id: {}", id);
+        Badge badge = badgeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.BADGE_NOT_FOUND)));
+        badgeRepository.delete(badge);
+        log.info("Badge deleted: {}", id);
     }
 }
