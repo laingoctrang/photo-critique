@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import { SIDEBAR_MENU } from "../../constants";
-import { TabCategory, UserRole, type MenuItem } from "../../types/enums";
+import { TabCategory, UserRole, type MenuItem } from "../../types";
 import { useAuth } from "../../hooks";
 import { Modal } from "../common";
 

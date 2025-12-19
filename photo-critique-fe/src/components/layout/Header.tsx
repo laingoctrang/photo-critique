@@ -1,11 +1,10 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks";
-import { SearchBar } from "../common/SearchBar";
-import { TabCategory, UserRole } from "../../types/enums";
-import { SIDEBAR_MENU } from "../../constants/menu";
+import { Button, SearchBar } from "../common";
+import { UserRole } from "../../types/enums";
+import { SIDEBAR_MENU } from "../../constants";
 import { BellIcon } from "@heroicons/react/24/outline";
-import { Button } from "../common";
 
 interface User {
   id: string;

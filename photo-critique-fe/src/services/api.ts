@@ -28,8 +28,23 @@ api.interceptors.response.use(
     // (4xx, 5xx)
     if (error.response) {
       const data: ApiResponse = error.response.data;
-      if (data && data.message) {
-        error.message = data.message;
+      const errorMessage: string[] = [];
+      if (data?.globalErrors) {
+        errorMessage.push(...data.globalErrors);
+      }
+
+      if (data?.fieldErrors) {
+        Object.entries(data.fieldErrors).forEach(([_key, value]) => {
+          errorMessage.push(value);
+        });
+      }
+
+      if (data && data.message && errorMessage.length === 0) {
+        errorMessage.push(data.message);
+      }
+
+      if (errorMessage.length > 0) {
+        return Promise.reject(new Error(errorMessage.join(", ")));
       }
     }
     return Promise.reject(error);

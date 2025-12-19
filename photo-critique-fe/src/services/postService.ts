@@ -24,12 +24,19 @@ export interface PostListItemResponse {
     createdAt: string;
 }
 
-interface UserPostResponse {
+export interface UserPostResponse {
     id: string;
     username: string;
     profilePicture: string;
     fullName: string;
-    isOnline?: boolean;
+    isOnline: boolean;
+    xpPoints: number;
+    level: number;
+    followersCount: number;
+    followingCount: number;
+    isFollowing: boolean;
+    isFollowedBy: boolean;
+    followStatus: string;
 }
 
 export interface PostResponse {
@@ -94,44 +101,4 @@ export const postService = {
         return response.data.success ? true : response.data.message;
     },
 
-    // verifyRegistration: async (verifyData: VerifyRegisterData): Promise<AuthResponse & { message: string }> => {
-    //     const response = await api.post<ApiResponse<AuthResponse>>("/auth/verify-registration", verifyData);
-    //     const { data, message } = response.data;
-
-    //     return {
-    //         ...data,
-    //         message,
-    //     };
-    // },
-
-
-    // forgotPassword: async (email: string): Promise<string> => {
-    //     const response = await api.post<ApiResponse<void>>('/auth/forgot-password', { email });
-    //     return response.data.message || 'OTP sent successfully';
-    // },
-
-    // verifyResetOtp: async (verifyOtpData: VerifyOtpData): Promise<string> => {
-    //     const response = await api.post<ApiResponse<string>>('/auth/verify-reset-otp', verifyOtpData);
-    //     return response.data.data; // resetToken
-    // },
-
-    // resetPassword: async (resetPasswordData: ResetPasswordData): Promise<string> => {
-    //     const response = await api.post<ApiResponse<void>>('/auth/reset-password', resetPasswordData);
-    //     return response.data.message || 'Password reset successfully';
-    // },
-
-    // resendOtp: async (resendOtpData: ResendOtpData): Promise<string> => {
-    //     const response = await api.post<ApiResponse<void>>('/auth/resend-otp', resendOtpData);
-    //     return response.data.message || 'OTP sent successfully';
-    // },
-
-    // // Helper method để get current token
-    // getToken: (): string | null => {
-    //     return localStorage.getItem('token');
-    // },
-
-    // // Helper method để check if user is authenticated
-    // isAuthenticated: (): boolean => {
-    //     return !!localStorage.getItem('token');
-    // }
 };
