@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { PrivacyType, ReactionType } from "../../types/enums";
+import React, { useEffect, useState, useRef } from "react";
+import { PrivacyType, ReactionType } from "../../types";
 import { Reaction, ContentExpandable, ImageCarousel, ToastType } from "../../components";
-import { showToast } from "../../utils";
-import { postService, type PostListItemResponse } from "../../services";
+import { showToast, formatDateTime } from "../../utils";
+import { postService, type PostListItemResponse, type UserPostResponse } from "../../services";
 import {
   BookmarkIcon,
   ChatBubbleBottomCenterIcon,
@@ -15,6 +15,7 @@ import {
 import { BookmarkIcon as BookmarkIconSolid } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks";
+import { UserHoverCard } from "../user";
 
 interface PostCardProps {
   post: PostListItemResponse;
@@ -37,6 +38,14 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [imgRatio, setImgRatio] = useState<number | null>(null);
 
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const [isHovering, setIsHovering] = useState<boolean>(false);
+  const hoverTimeoutRef = useRef<number | null>(null);
+
+  // Sync currentPost with post prop when it changes
+  useEffect(() => {
+    setCurrentPost(post);
+  }, [post]);
 
   useEffect(() => {
     let mounted = true;
@@ -91,17 +100,16 @@ export const PostCard: React.FC<PostCardProps> = ({
     };
   }, [post]);
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
-  };
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  const formattedDate = formatDate(post.createdAt);
+  const formattedDate = formatDateTime(post.createdAt);
 
   const privacyIcon = (privacy: PrivacyType): React.ReactNode => {
     switch (privacy) {
@@ -120,14 +128,47 @@ export const PostCard: React.FC<PostCardProps> = ({
     postId: string,
     reactionType: ReactionType | null
   ) => {
+    const previousReaction = currentPost.userReaction;
+    const previousLikesCount = currentPost.likesCount;
+    const wasLiked = previousReaction !== null && previousReaction !== undefined;
+    const willBeLiked = reactionType !== null;
+
     try {
+      // Optimistic update
+      setCurrentPost((prev) => {
+        const newLikesCount = wasLiked && !willBeLiked 
+          ? Math.max(0, (prev.likesCount || 0) - 1)
+          : !wasLiked && willBeLiked
+          ? (prev.likesCount || 0) + 1
+          : prev.likesCount || 0;
+
+        return {
+          ...prev,
+          userReaction: reactionType ?? undefined,
+          likesCount: newLikesCount,
+        };
+      });
+
       if (reactionType !== null) {
         await postService.addReaction(postId, reactionType);
       } else {
         await postService.removeReaction(postId);
       }
-    } catch (error: any) {
-      showToast(ToastType.ERROR, error.message);
+    } catch (error: unknown) {
+      // Revert on error - reload post data
+      try {
+        const updatedPost = await postService.getPostById(postId);
+        setCurrentPost(updatedPost);
+      } catch {
+        // If reload fails, just revert to previous state
+        setCurrentPost((prev) => ({
+          ...prev,
+          userReaction: previousReaction ?? undefined,
+          likesCount: previousLikesCount,
+        }));
+      }
+      const errorMessage = error instanceof Error ? error.message : "Failed to update reaction";
+      showToast(ToastType.ERROR, errorMessage);
     }
   };
 
@@ -141,7 +182,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         result = await postService.savePost(postId);
       }
       if (result)
-        setCurrentPost((prev: any) => ({ ...prev, isSaved: !prev.isSaved }));
+        setCurrentPost((prev: PostListItemResponse) => ({ ...prev, isSaved: !prev.isSaved }));
     } catch (error: any) {
       showToast(ToastType.ERROR, error.message);
     } finally {
@@ -151,7 +192,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-3xl
+      className={`bg-white rounded-3xl shadow-sm
                 w-full max-w-full h-full
                 mx-auto px-4 sm:px-0
                 ${isViewDetail ? "" : "sm:max-w-md md:max-w-lg lg:max-w-3xl"}`}
@@ -160,11 +201,25 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         {/* Header Left */}
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-between">
           <img
             src={currentPost.user.profilePicture}
             alt={currentPost.user.username}
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-12 h-12 rounded-full object-cover cursor-pointer"
+            onClick={() => {navigate(`/${currentPost.user.username}`)}}
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+              }
+              setIsHovering(true);
+            }}
+            onMouseLeave={() => {
+              hoverTimeoutRef.current = window.setTimeout(() => {
+                setIsHovering(false);
+                hoverTimeoutRef.current = null;
+              }, 150); // Delay 150ms before hiding
+            }}
           />
           <div className="ml-3">
             <p className="text-sm font-semibold text-gray-900">
@@ -174,6 +229,34 @@ export const PostCard: React.FC<PostCardProps> = ({
               @{currentPost.user.username} · {formattedDate} · {privacyIcon(currentPost.privacy)}
             </p>
           </div>
+
+          {isHovering && (
+            <div
+              className="absolute"
+              onMouseEnter={() => {
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                  hoverTimeoutRef.current = null;
+                }
+                setIsHovering(true);
+              }}
+              onMouseLeave={() => {
+                hoverTimeoutRef.current = window.setTimeout(() => {
+                  setIsHovering(false);
+                  hoverTimeoutRef.current = null;
+                }, 150);
+              }}
+            >
+              <UserHoverCard
+                user={currentPost.user}
+                isOwnProfile={isPostAuthor}
+                onFollow={() => {}}
+                onUserUpdate={(updates) => {
+                  setCurrentPost((prev: PostListItemResponse) => ({ ...prev, user: updates as UserPostResponse }));
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Header Right */}
