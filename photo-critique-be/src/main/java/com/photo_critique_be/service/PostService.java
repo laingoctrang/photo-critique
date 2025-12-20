@@ -21,6 +21,7 @@ public interface PostService {
     List<PostListItemResponse> getFeed(Pageable pageable);
     Page<PostListItemResponse> getPostsByUserId(String userId, Pageable pageable);
     Page<PostListItemResponse> getMyPosts(Pageable pageable);
+    Page<PostListItemResponse> getDraftPosts(Pageable pageable);
     Page<PostListItemResponse> getSavedPosts(Pageable pageable);
     void savePost(String postId);
     void unsavePost(String postId);

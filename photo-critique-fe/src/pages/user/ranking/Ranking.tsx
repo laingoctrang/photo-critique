@@ -1,8 +1,5 @@
-export const Ranking = () => {
-  return (
-    <div className="flex flex-col gap-6">
-        Coming soon
+import { RankingBoard } from '../../../features/ranking';
 
-    </div>
-  );
-}
+export const Ranking = () => {
+  return <RankingBoard />;
+};

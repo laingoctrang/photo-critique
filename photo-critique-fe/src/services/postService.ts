@@ -1,4 +1,4 @@
-import type { PrivacyType, ReactionType } from '../types/enums';
+import type { PostStatus, PrivacyType, ReactionType } from '../types/enums';
 import { api } from './api';
 import type { ApiResponse, ImageInfo } from './types';
 
@@ -7,6 +7,7 @@ interface CreatePostRequest {
     caption?: string;
     privacy: PrivacyType;
     tags?: string[];
+    status?: "DRAFTED" | "POSTED" | "PENDING_APPROVAL" | "PENDING";
 }
 
 export interface PostListItemResponse {
@@ -15,6 +16,7 @@ export interface PostListItemResponse {
     caption: string;
     imageUrls: ImageInfo[];
     privacy: PrivacyType;
+    status: PostStatus;
     likesCount: number;
     commentsCount: number;
     sharesCount: number;
@@ -45,6 +47,7 @@ export interface PostResponse {
     caption: string;
     imageUrls: ImageInfo[];
     privacy: PrivacyType;
+    status?: PostStatus;
     likesCount: number;
     commentsCount: number;
     sharesCount: number;
@@ -61,6 +64,16 @@ export interface PostResponse {
 export const postService = {
     createPost: async (createPostData: CreatePostRequest): Promise<PostResponse & { message: string }> => {
         const response = await api.post<ApiResponse<PostResponse>>('/posts', createPostData);
+        const { data, message } = response.data;
+
+        return {
+            ...data,
+            message,
+        };
+    },
+
+    updatePost: async (postId: string, updateData: Partial<CreatePostRequest>): Promise<PostResponse & { message: string }> => {
+        const response = await api.put<ApiResponse<PostResponse>>(`/posts/${postId}`, updateData);
         const { data, message } = response.data;
 
         return {

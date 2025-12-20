@@ -4,8 +4,11 @@ import type { ApiResponse } from "./types";
 import type { PostListItemResponse } from "./postService";
 
 export interface UpdateProfileData {
-  name?: string;
-  avatar?: string;
+  bio?: string;
+  fullName?: string;
+  profilePicture?: string;
+  privacySetting?: string;
+  badgeId?: string;
 }
 
 export interface BadgeEarnedResponse {
@@ -44,6 +47,21 @@ export interface PageResponse<T> {
   number: number;
 }
 
+export interface UserListItemResponse {
+  id: string;
+  username: string;
+  profilePicture: string;
+  fullName: string;
+  isOnline?: boolean;
+  xpPoints?: number;
+  level?: number;
+  followersCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
+  isFollowedBy?: boolean;
+  followStatus?: string;
+}
+
 export const userService = {
   getProfile: async (): Promise<UserProfileResponse> => {
     const response = await api.get<ApiResponse<UserProfileResponse>>('/users/me');
@@ -60,9 +78,9 @@ export const userService = {
     return response.data.data;
   },
 
-  updateProfile: async (data: UpdateProfileData): Promise<User> => {
-    const response = await api.patch<User>('/users/me', data);
-    return response.data;
+  updateProfile: async (data: UpdateProfileData): Promise<UserProfileResponse> => {
+    const response = await api.put<ApiResponse<UserProfileResponse>>('/users/me', data);
+    return response.data.data;
   },
 
   getUserById: async (userId: string): Promise<User> => {
@@ -92,6 +110,27 @@ export const userService = {
 
   getSavedPosts: async (page: number = 0, size: number = 20): Promise<PageResponse<PostListItemResponse>> => {
     const response = await api.get<ApiResponse<PageResponse<PostListItemResponse>>>(`/posts/saved`, {
+      params: { page, size }
+    });
+    return response.data.data;
+  },
+
+  getDraftPosts: async (page: number = 0, size: number = 20): Promise<PageResponse<PostListItemResponse>> => {
+    const response = await api.get<ApiResponse<PageResponse<PostListItemResponse>>>(`/posts/me/drafts`, {
+      params: { page, size }
+    });
+    return response.data.data;
+  },
+
+  getFollowers: async (userId: string, page: number = 0, size: number = 20): Promise<PageResponse<UserListItemResponse>> => {
+    const response = await api.get<ApiResponse<PageResponse<UserListItemResponse>>>(`/users/${userId}/followers`, {
+      params: { page, size }
+    });
+    return response.data.data;
+  },
+
+  getFollowing: async (userId: string, page: number = 0, size: number = 20): Promise<PageResponse<UserListItemResponse>> => {
+    const response = await api.get<ApiResponse<PageResponse<UserListItemResponse>>>(`/users/${userId}/following`, {
       params: { page, size }
     });
     return response.data.data;

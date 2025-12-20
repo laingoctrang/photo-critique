@@ -1,9 +1,9 @@
 package com.photo_critique_be.dto.request.post;
 
+import com.photo_critique_be.enums.PostStatus;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.model.embedded.ImageInfo;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -20,6 +20,8 @@ public class CreatePostRequest {
     private PrivacyType privacy;
 
     private List<String> tags;
+
+    private PostStatus status; // Optional, default to POSTED if not provided
 
     @AssertTrue(message = "Post must have at least a caption or an image")
     private boolean isCaptionOrImagePresent() {

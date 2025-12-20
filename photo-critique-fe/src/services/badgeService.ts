@@ -20,9 +20,42 @@ export interface BadgeRequest {
   level: number;
 }
 
+export interface FilterParams {
+  search?: string;
+  filters?: Record<string, string>;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  page?: number;
+  size?: number;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export const badgeService = {
   getAll: async (): Promise<BadgeResponse[]> => {
-    const response = await api.get<ApiResponse<BadgeResponse[]>>('/badges');
+    const response = await api.get<ApiResponse<BadgeResponse[]>>('/badges/all');
+    return response.data.data;
+  },
+
+  getFiltered: async (params: FilterParams): Promise<PageResponse<BadgeResponse>> => {
+    const response = await api.get<ApiResponse<PageResponse<BadgeResponse>>>('/badges', {
+      params: {
+        search: params.search,
+        filters: params.filters,
+        sortBy: params.sortBy,
+        sortDirection: params.sortDirection,
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+      },
+    });
     return response.data.data;
   },
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loading, ToastType } from "../../../components";
 import { showToast } from "../../../utils";
 import { ProfileHeader, ProfileTabs, PostsGrid, AboutSection } from "../../../features/user";
@@ -7,11 +8,13 @@ import type { TabType } from "../../../features/user/ProfileTabs";
 import { userService, type PostListItemResponse, type UserProfileResponse } from "../../../services";
 
 export const MyProfile = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("posts");
   const [posts, setPosts] = useState<PostListItemResponse[]>([]);
   const [savedPosts, setSavedPosts] = useState<PostListItemResponse[]>([]);
+  const [draftPosts, setDraftPosts] = useState<PostListItemResponse[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [postsCount, setPostsCount] = useState(0);
@@ -26,8 +29,9 @@ export const MyProfile = () => {
         // Load posts count
         const postsResponse = await userService.getPostsByUserId(profileData.id, 0, 1);
         setPostsCount(postsResponse.totalElements);
-      } catch (error: any) {
-        showToast(ToastType.ERROR, error?.message || "Failed to load profile");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to load profile";
+        showToast(ToastType.ERROR, errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -48,9 +52,13 @@ export const MyProfile = () => {
         } else if (activeTab === "saved") {
           const response = await userService.getSavedPosts(0, 20);
           setSavedPosts(response.content);
+        } else if (activeTab === "drafted") {
+          const response = await userService.getDraftPosts(0, 20);
+          setDraftPosts(response.content);
         }
-      } catch (error: any) {
-        showToast(ToastType.ERROR, error?.message || "Failed to load posts");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to load posts";
+        showToast(ToastType.ERROR, errorMessage);
       } finally {
         setIsLoadingPosts(false);
       }
@@ -79,7 +87,23 @@ export const MyProfile = () => {
     );
   }
 
-  const displayPosts = activeTab === "posts" ? posts : savedPosts;
+  const getDisplayPosts = () => {
+    if (activeTab === "posts") return posts;
+    if (activeTab === "saved") return savedPosts;
+    if (activeTab === "drafted") return draftPosts;
+    return [];
+  };
+
+  const displayPosts = getDisplayPosts();
+
+  const handlePostClick = (postId: string) => {
+    if (activeTab === "drafted") {
+      // Navigate to create page with postId to edit draft
+      navigate(`/create?edit=${postId}`);
+    } else {
+      setSelectedPostId(postId);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
@@ -108,8 +132,8 @@ export const MyProfile = () => {
               <PostsGrid
                 posts={displayPosts}
                 isLoading={isLoadingPosts}
-                onPostClick={setSelectedPostId}
-                emptyMessage={`No ${activeTab === "saved" ? "saved " : ""}posts yet`}
+                onPostClick={handlePostClick}
+                emptyMessage={`No ${activeTab === "saved" ? "saved " : activeTab === "drafted" ? "drafted " : ""}posts yet`}
               />
             )}
           </div>

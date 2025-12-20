@@ -1,5 +1,6 @@
 package com.photo_critique_be.repository;
 
+import com.photo_critique_be.enums.PostStatus;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.model.Post;
 import org.springframework.data.domain.Page;
@@ -14,14 +15,26 @@ import java.util.Optional;
 
 @Repository
 public interface PostRepository extends MongoRepository<Post, String>, PostRepositoryCustom {
-    Page<Post> findByIsDeletedFalseAndUserIdAndPrivacyInOrderByCreatedAtDesc(String userId, List<PrivacyType> privacyTypes, Pageable pageable);
+    // Query by status instead of isDeleted
+    Page<Post> findByUserIdAndStatusInOrderByCreatedAtDesc(String userId, List<PostStatus> statuses, Pageable pageable);
     Page<Post> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
     long countByUserId(String userId);
+    long countByUserIdAndStatusIn(String userId, List<PostStatus> statuses);
 
     Optional<Post> findByIdAndIsDeletedFalse(String id);
+    Optional<Post> findByIdAndStatusIn(String id, List<PostStatus> statuses);
 
+    Page<Post> findByStatusInAndPrivacyInOrderByCreatedAtDesc(List<PostStatus> statuses, List<PrivacyType> privacy, Pageable pageable);
+    
+    // Draft posts
+    Page<Post> findByUserIdAndStatusOrderByCreatedAtDesc(String userId, PostStatus status, Pageable pageable);
+    
+    // Keep old methods for backward compatibility
+    @Deprecated
+    Page<Post> findByIsDeletedFalseAndUserIdAndPrivacyInOrderByCreatedAtDesc(String userId, List<PrivacyType> privacyTypes, Pageable pageable);
+    @Deprecated
     Page<Post> findByIsDeletedFalseAndPrivacyInOrderByCreatedAtDesc(List<PrivacyType> privacy, Pageable pageable);
-
+    @Deprecated
     Page<Post> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(String userId, Pageable pageable);
 
     // Posts đã bị soft delete

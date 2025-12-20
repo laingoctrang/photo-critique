@@ -1,4 +1,4 @@
-export type TabType = "posts" | "saved" | "about";
+export type TabType = "posts" | "saved" | "drafted" | "about";
 
 interface ProfileTabsProps {
   activeTab: TabType;
@@ -25,16 +25,28 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
           Posts
         </button>
         {isOwnProfile && (
-          <button
-            onClick={() => onTabChange("saved")}
-            className={`py-4 px-2 border-b-2 font-medium transition-colors ${
-              activeTab === "saved"
-                ? "border-[#15B8A6] text-[#15B8A6]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Saved
-          </button>
+          <>
+            <button
+              onClick={() => onTabChange("drafted")}
+              className={`py-4 px-2 border-b-2 font-medium transition-colors ${
+                activeTab === "drafted"
+                  ? "border-[#15B8A6] text-[#15B8A6]"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Drafted
+            </button>
+            <button
+              onClick={() => onTabChange("saved")}
+              className={`py-4 px-2 border-b-2 font-medium transition-colors ${
+                activeTab === "saved"
+                  ? "border-[#15B8A6] text-[#15B8A6]"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Saved
+            </button>
+          </>
         )}
         <button
           onClick={() => onTabChange("about")}

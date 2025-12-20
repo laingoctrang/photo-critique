@@ -1,6 +1,7 @@
 package com.photo_critique_be.repository;
 
 import com.photo_critique_be.dto.response.post.PostListItemResponse;
+import com.photo_critique_be.enums.PostStatus;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     public List<PostListItemResponse> findFeedWithAggregation(String currentUserId,
                                                               List<String> userIds,
                                                               List<String> privacyValues,
+                                                              List<PostStatus> allowedStatuses,
                                                               Pageable pageable) {
 
         long skip = pageable.getOffset();
@@ -36,8 +39,15 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         // Match criteria:
         // 1. Posts from users that current user follows (with allowed privacy: PUBLIC, FOLLOWER_ONLY)
         // 2. OR all PUBLIC posts from any user (to show public posts from users not followed)
-        // 3. Exclude deleted posts
-        Criteria matchCriteria = new Criteria().and("is_deleted").ne(true)
+        // 3. Filter by status (e.g., only POSTED)
+        // 4. Exclude deleted posts
+        List<String> statusStrings = allowedStatuses.stream()
+                .map(Enum::name)
+                .collect(Collectors.toList());
+        
+        Criteria matchCriteria = new Criteria()
+            .and("is_deleted").ne(true)
+            .and("status").in(statusStrings)
             .orOperator(
                 // Posts from followed users (or self) with allowed privacy
                 Criteria.where("user_id").in(userIds)
@@ -148,6 +158,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .and("caption").as("caption")
                 .and("image_urls").as("imageUrls")
                 .and("privacy").as("privacy")
+                .and("status").as("status")
                 .and("likes_count").as("likesCount")
                 .and("comments_count").as("commentsCount")
                 .and("shares_count").as("sharesCount")

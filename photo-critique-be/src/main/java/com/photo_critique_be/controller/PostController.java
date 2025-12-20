@@ -78,6 +78,13 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.POST_GET_SUCCESS)));
     }
 
+    @GetMapping("/me/drafts")
+    public ResponseEntity<ApiResponse<Page<PostListItemResponse>>> getDraftPosts(
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<PostListItemResponse> response = postService.getDraftPosts(pageable);
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.POST_GET_SUCCESS)));
+    }
+
     @GetMapping("/saved")
     public ResponseEntity<ApiResponse<Page<PostListItemResponse>>> getSavedPosts(
             @PageableDefault(size = 20) Pageable pageable) {

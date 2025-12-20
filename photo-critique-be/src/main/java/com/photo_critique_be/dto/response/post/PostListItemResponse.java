@@ -2,6 +2,7 @@ package com.photo_critique_be.dto.response.post;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.photo_critique_be.dto.response.user.UserPostResponse;
+import com.photo_critique_be.enums.PostStatus;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.enums.ReactionType;
 import com.photo_critique_be.model.embedded.ImageInfo;
@@ -24,6 +25,7 @@ public class PostListItemResponse {
     private String caption;
     private List<ImageInfo> imageUrls;
     private PrivacyType privacy;
+    private PostStatus status;
     private Integer likesCount;
     private Integer commentsCount;
     private Integer sharesCount;

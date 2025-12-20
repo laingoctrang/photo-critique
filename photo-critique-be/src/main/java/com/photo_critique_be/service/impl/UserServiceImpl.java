@@ -87,13 +87,36 @@ public class UserServiceImpl implements UserService {
         String currentUserId = SecurityUtil.getCurrentUserId();
         User user = getUserByUsername(username);
 
-        // Check privacy and follow status
-        if (!canViewProfile(user, currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_PROFILE_PRIVATE));
-        }
-
         FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
 
+        // Check privacy and follow status
+        boolean canViewFullProfile = canViewProfile(user, currentUserId);
+        
+        if (!canViewFullProfile) {
+            // Return basic profile information only
+            UserProfileResponse userProfileResponse = UserProfileResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .profilePicture(user.getProfilePicture())
+                    .fullName(user.getFullName())
+                    .bio(null) // Hide bio for private profiles
+                    .isOnline(null)
+                    .lastSeen(null)
+                    .privacySetting(user.getPrivacySetting().name())
+                    .xpPoints(null)
+                    .level(null)
+                    .badges(null) // Hide badges
+                    .followersCount(null)
+                    .followingCount(null)
+                    .createdAt(null)
+                    .isFollowing(followInfo.getIsFollowing())
+                    .isFollowedBy(followInfo.getIsFollowedBy())
+                    .followStatus(followInfo.getFollowStatus())
+                    .build();
+            return userProfileResponse;
+        }
+
+        // Return full profile information
         UserProfileResponse userProfileResponse = userMapper.toUserProfileResponse(user, followInfo);
         if (user.getBadges() != null && !user.getBadges().isEmpty()) {
             userProfileResponse.setBadges(badgeService.getBadgesEarned(user.getBadges()));
@@ -107,13 +130,36 @@ public class UserServiceImpl implements UserService {
         String currentUserId = SecurityUtil.getCurrentUserId();
         User user = getUserById(userId);
 
-        // Check privacy and follow status
-        if (!canViewProfile(user, currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_PROFILE_PRIVATE));
-        }
-
         FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
 
+        // Check privacy and follow status
+        boolean canViewFullProfile = canViewProfile(user, currentUserId);
+        
+        if (!canViewFullProfile) {
+            // Return basic profile information only
+            UserProfileResponse userProfileResponse = UserProfileResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .profilePicture(user.getProfilePicture())
+                    .fullName(user.getFullName())
+                    .bio(null) // Hide bio for private profiles
+                    .isOnline(null)
+                    .lastSeen(null)
+                    .privacySetting(user.getPrivacySetting().name())
+                    .xpPoints(null)
+                    .level(null)
+                    .badges(null) // Hide badges
+                    .followersCount(null)
+                    .followingCount(null)
+                    .createdAt(null)
+                    .isFollowing(followInfo.getIsFollowing())
+                    .isFollowedBy(followInfo.getIsFollowedBy())
+                    .followStatus(followInfo.getFollowStatus())
+                    .build();
+            return userProfileResponse;
+        }
+
+        // Return full profile information
         UserProfileResponse userProfileResponse = userMapper.toUserProfileResponse(user, followInfo);
         if (user.getBadges() != null && !user.getBadges().isEmpty()) {
             userProfileResponse.setBadges(badgeService.getBadgesEarned(user.getBadges()));
@@ -178,12 +224,20 @@ public class UserServiceImpl implements UserService {
         }
 
         Follow follow;
+        boolean isNewFollow = false;
+        FollowStatus oldStatus = null;
+        
         if (existingFollow.isPresent()) {
             follow = existingFollow.get();
+            oldStatus = follow.getStatus();
+            
             if (follow.getStatus() == FollowStatus.ACCEPTED) {
                 throw new ConflictException(languageService.getMessage(MessageCode.USER_ALREADY_FOLLOWING));
             } else if (follow.getStatus() == FollowStatus.PENDING) {
-                throw new ConflictException(languageService.getMessage(MessageCode.USER_FOLLOW_REQUEST_PENDING));
+                // Cancel pending request (unfollow)
+                followRepository.delete(follow);
+                // Update follower counts if needed (though for PENDING, counts shouldn't have changed)
+                return; // Exit early after canceling
             } else if (follow.getStatus() == FollowStatus.BLOCKED) {
                 throw new AuthorizationException(languageService.getMessage(MessageCode.USER_BLOCKED));
             } else if (follow.getStatus() == FollowStatus.REJECTED) {
@@ -192,6 +246,7 @@ public class UserServiceImpl implements UserService {
             }
         } else {
             // Create new follow relationship
+            isNewFollow = true;
             follow = new Follow();
             follow.setFollowerId(currentUserId);
             follow.setFollowingId(userId);
@@ -200,11 +255,11 @@ public class UserServiceImpl implements UserService {
 
         // Update follower counts if status is ACCEPTED
         if (status == FollowStatus.ACCEPTED) {
-            // Only update counts if this is a new follow or status changed from REJECTED
-            if (existingFollow.isPresent() && existingFollow.get().getStatus() == FollowStatus.REJECTED) {
-                targetUser.setFollowersCount(targetUser.getFollowersCount() + 1);
+            // Update counts if this is a new follow or status changed from REJECTED
+            if (isNewFollow || (oldStatus != null && oldStatus == FollowStatus.REJECTED)) {
+                targetUser.setFollowersCount((targetUser.getFollowersCount() != null ? targetUser.getFollowersCount() : 0) + 1);
                 User currentUser = userRepository.findById(currentUserId).orElseThrow();
-                currentUser.setFollowingCount(currentUser.getFollowingCount() + 1);
+                currentUser.setFollowingCount((currentUser.getFollowingCount() != null ? currentUser.getFollowingCount() : 0) + 1);
                 userRepository.save(targetUser);
                 userRepository.save(currentUser);
             }

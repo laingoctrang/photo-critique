@@ -8,22 +8,57 @@ export interface XPConfigResponse {
   points: number;
   description?: string;
   category?: string;
-  isActive: boolean;
+  status?: "PENDING_DEVELOPMENT" | "IN_DEVELOPMENT" | "PENDING_APPROVAL" | "ACTIVE";
+  isActive?: boolean; // Deprecated, use status instead
   createdAt: string;
   updatedAt: string;
 }
 
 export interface XPConfigRequest {
-  eventType: string;
+  eventType?: string;
   name: string;
   points: number;
   description?: string;
   category?: string;
+  status?: "PENDING_DEVELOPMENT" | "IN_DEVELOPMENT" | "PENDING_APPROVAL" | "ACTIVE";
+}
+
+export interface FilterParams {
+  search?: string;
+  filters?: Record<string, string>;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  page?: number;
+  size?: number;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export const xpConfigService = {
   getAll: async (): Promise<XPConfigResponse[]> => {
-    const response = await api.get<ApiResponse<XPConfigResponse[]>>('/xp-configs');
+    const response = await api.get<ApiResponse<XPConfigResponse[]>>('/xp-configs/all');
+    return response.data.data;
+  },
+
+  getFiltered: async (params: FilterParams): Promise<PageResponse<XPConfigResponse>> => {
+    const response = await api.get<ApiResponse<PageResponse<XPConfigResponse>>>('/xp-configs', {
+      params: {
+        search: params.search,
+        filters: params.filters,
+        sortBy: params.sortBy,
+        sortDirection: params.sortDirection,
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+      },
+    });
     return response.data.data;
   },
 

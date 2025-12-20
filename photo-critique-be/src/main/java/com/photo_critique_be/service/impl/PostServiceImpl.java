@@ -67,16 +67,20 @@ public class PostServiceImpl implements PostService {
         post.setImageUrls(request.getImageUrls());
         post.setPrivacy(request.getPrivacy());
         post.setTags(request.getTags() != null ? request.getTags() : new ArrayList<>());
+        // Set status from request, default to POSTED
+        post.setStatus(request.getStatus() != null ? request.getStatus() : PostStatus.POSTED);
 
         post = postRepository.save(post);
 
-        // Award XP for public posts
-        if (request.getPrivacy() == PrivacyType.PUBLIC) {
+        // Award XP for public posts that are POSTED (not drafts)
+        if (request.getPrivacy() == PrivacyType.PUBLIC && post.getStatus() == PostStatus.POSTED) {
             xpEventService.awardXP(currentUserId, XPEventConstant.POST_CREATED, post.getId(), null);
         }
 
-        // Notify followers about new post
-        notifyFollowersAboutNewPost(user, post);
+        // Notify followers about new post (only if POSTED)
+        if (post.getStatus() == PostStatus.POSTED) {
+            notifyFollowersAboutNewPost(user, post);
+        }
 
         return buildPostResponse(post, currentUserId);
     }
@@ -85,8 +89,10 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostResponse updatePost(String postId, UpdatePostRequest request) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        Post post = postRepository.findByIdAndIsDeletedFalse(postId)
-                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND)));
+        Post post = postRepository.findByIdAndStatusIn(postId, 
+                List.of(PostStatus.DRAFTED, PostStatus.POSTED, PostStatus.PENDING_APPROVAL, PostStatus.PENDING))
+                .orElseGet(() -> postRepository.findByIdAndIsDeletedFalse(postId)
+                        .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND))));
 
         if (!post.getUserId().equals(currentUserId)) {
             throw new AuthorizationException(languageService.getMessage(MessageCode.POST_UPDATE_UNAUTHORIZED));
@@ -101,6 +107,22 @@ public class PostServiceImpl implements PostService {
         if (request.getTags() != null) {
             post.setTags(request.getTags());
         }
+        if (request.getStatus() != null) {
+            PostStatus oldStatus = post.getStatus();
+            post.setStatus(request.getStatus());
+            
+            // Award XP if status changed from DRAFTED/PENDING to POSTED and is public
+            if (oldStatus != PostStatus.POSTED && request.getStatus() == PostStatus.POSTED 
+                    && post.getPrivacy() == PrivacyType.PUBLIC) {
+                xpEventService.awardXP(currentUserId, XPEventConstant.POST_CREATED, post.getId(), null);
+            }
+            
+            // Notify followers if status changed to POSTED
+            if (oldStatus != PostStatus.POSTED && request.getStatus() == PostStatus.POSTED) {
+                User user = userService.getUserById(currentUserId);
+                notifyFollowersAboutNewPost(user, post);
+            }
+        }
         post.setUpdatedAt(LocalDateTime.now());
 
         post = postRepository.save(post);
@@ -110,9 +132,22 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostResponse getPostById(String postId) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        Post post = getUndeletedPostById(postId);
-
-        if (!canViewPost(post, currentUserId)) {
+        // Allow getting draft posts if user is the owner
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND)));
+        
+        // Check if post is deleted
+        if (post.getIsDeleted() != null && post.getIsDeleted()) {
+            throw new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND));
+        }
+        
+        // Allow owner to view their own drafts
+        if (post.getStatus() == PostStatus.DRAFTED && !post.getUserId().equals(currentUserId)) {
+            throw new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND));
+        }
+        
+        // Check if user can view this post (for non-draft posts)
+        if (post.getStatus() != PostStatus.DRAFTED && !canViewPost(post, currentUserId)) {
             throw new AuthorizationException(languageService.getMessage(MessageCode.POST_VIEW_UNAUTHORIZED));
         }
 
@@ -130,8 +165,11 @@ public class PostServiceImpl implements PostService {
         followingIds.add(currentUserId); // add current user
 
         List<String> allowedPrivacy = List.of(PrivacyType.PUBLIC.name(), PrivacyType.FOLLOWER_ONLY.name());
+        
+        // Only show POSTED posts in feed
+        List<PostStatus> allowedStatuses = List.of(PostStatus.POSTED);
 
-        return postRepository.findFeedWithAggregation(currentUserId, followingIds, allowedPrivacy, pageable);
+        return postRepository.findFeedWithAggregation(currentUserId, followingIds, allowedPrivacy, allowedStatuses, pageable);
     }
 
     @Override
@@ -139,12 +177,15 @@ public class PostServiceImpl implements PostService {
         String currentUserId = SecurityUtil.getCurrentUserId();
 
         // Check if current user can view this user's posts
-        User user = userService.getUserById(userId);
+        userService.getUserById(userId);
 
         List<PrivacyType> privacyTypes;
+        List<PostStatus> allowedStatuses;
+        
         if (userId.equals(currentUserId)) {
-            // User can see all their own posts
+            // User can see all their own posts (including DRAFTED)
             privacyTypes = List.of(PrivacyType.PUBLIC, PrivacyType.PRIVATE, PrivacyType.FOLLOWER_ONLY);
+            allowedStatuses = List.of(PostStatus.POSTED, PostStatus.PENDING_APPROVAL, PostStatus.PENDING);
         } else {
             // Check follow status
             Optional<Follow> follow = followService.existingFollow(currentUserId, userId);
@@ -153,22 +194,42 @@ public class PostServiceImpl implements PostService {
             } else {
                 privacyTypes = List.of(PrivacyType.PUBLIC);
             }
+            // Only show POSTED posts for other users
+            allowedStatuses = List.of(PostStatus.POSTED);
         }
 
-        Page<Post> posts = postRepository.findByIsDeletedFalseAndUserIdAndPrivacyInOrderByCreatedAtDesc(
-                userId, privacyTypes, pageable);
+        Page<Post> posts = postRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(
+                userId, allowedStatuses, pageable);
+        
+        // Filter by privacy if needed
+        List<Post> filteredPosts = posts.getContent().stream()
+                .filter(post -> privacyTypes.contains(post.getPrivacy()))
+                .collect(Collectors.toList());
 
-        List<PostListItemResponse> responses = posts.getContent().stream()
+        List<PostListItemResponse> responses = filteredPosts.stream()
                 .map(post -> buildPostListItemResponse(post, currentUserId))
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(responses, pageable, posts.getTotalElements());
+        return new PageImpl<>(responses, pageable, filteredPosts.size());
     }
 
     @Override
     public Page<PostListItemResponse> getMyPosts(Pageable pageable) {
         String currentUserId = SecurityUtil.getCurrentUserId();
         return getPostsByUserId(currentUserId, pageable);
+    }
+
+    @Override
+    public Page<PostListItemResponse> getDraftPosts(Pageable pageable) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        Page<Post> draftPosts = postRepository.findByUserIdAndStatusOrderByCreatedAtDesc(
+                currentUserId, PostStatus.DRAFTED, pageable);
+        
+        List<PostListItemResponse> responses = draftPosts.getContent().stream()
+                .map(post -> buildPostListItemResponse(post, currentUserId))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, draftPosts.getTotalElements());
     }
 
     @Override
@@ -181,7 +242,15 @@ public class PostServiceImpl implements PostService {
                 .map(SavedPost::getPostId)
                 .collect(Collectors.toList());
 
-        List<Post> posts = postRepository.findAllByIdInAndIsDeletedFalse(postIds);
+        // Get saved posts, only POSTED status (exclude drafts)
+        List<Post> allPosts = postRepository.findAllById(postIds);
+        List<Post> posts = allPosts.stream()
+                .filter(post -> post.getIsDeleted() == null || !post.getIsDeleted())
+                .filter(post -> post.getStatus() == PostStatus.POSTED || 
+                               post.getStatus() == PostStatus.PENDING || 
+                               post.getStatus() == PostStatus.PENDING_APPROVAL)
+                .collect(Collectors.toList());
+        
         // Sort by savedAt order
         posts.sort((p1, p2) -> {
             SavedPost sp1 = savedPosts.getContent().stream()
@@ -284,7 +353,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void removeReaction(String postId) {
         String currentUserId = SecurityUtil.getCurrentUserId();
-        Post post = getUndeletedPostById(postId);
+        getUndeletedPostById(postId);
 
         Reaction reaction = reactionRepository.findByUserIdAndTargetIdAndTargetType(currentUserId, postId, ReactionTargetType.POST)
                 .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.REACTION_NOT_FOUND)));
@@ -389,8 +458,21 @@ public class PostServiceImpl implements PostService {
     }
 
     public Post getUndeletedPostById(String postId) {
-        return postRepository.findByIdAndIsDeletedFalse(postId)
+        // Get post, allowing drafts only for owner
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND)));
+        
+        if (post.getIsDeleted() != null && post.getIsDeleted()) {
+            throw new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND));
+        }
+        
+        // Allow owner to access their drafts
+        if (post.getStatus() == PostStatus.DRAFTED && !post.getUserId().equals(currentUserId)) {
+            throw new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND));
+        }
+        
+        return post;
     }
 
     /**
@@ -504,6 +586,7 @@ public class PostServiceImpl implements PostService {
                 .caption(post.getCaption())
                 .imageUrls(post.getImageUrls())
                 .privacy(post.getPrivacy())
+                .status(post.getStatus())
                 .likesCount(post.getLikesCount())
                 .commentsCount(post.getCommentsCount())
                 .sharesCount(post.getSharesCount())
@@ -533,6 +616,7 @@ public class PostServiceImpl implements PostService {
                 .caption(post.getCaption())
                 .imageUrls(post.getImageUrls())
                 .privacy(post.getPrivacy())
+                .status(post.getStatus())
                 .likesCount(post.getLikesCount())
                 .commentsCount(post.getCommentsCount())
                 .sharesCount(post.getSharesCount())

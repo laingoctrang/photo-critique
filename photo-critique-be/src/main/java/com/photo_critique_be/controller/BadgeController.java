@@ -1,8 +1,10 @@
 package com.photo_critique_be.controller;
 
 import com.photo_critique_be.dto.request.badge.BadgeRequest;
+import com.photo_critique_be.dto.request.common.FilterRequest;
 import com.photo_critique_be.dto.response.ApiResponse;
 import com.photo_critique_be.dto.response.badge.BadgeResponse;
+import com.photo_critique_be.dto.response.common.PageResponse;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.service.BadgeService;
 import com.photo_critique_be.service.LanguageService;
@@ -23,6 +25,14 @@ public class BadgeController {
     private final LanguageService languageService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<PageResponse<BadgeResponse>>> getBadges(
+            @ModelAttribute FilterRequest filterRequest) {
+        PageResponse<BadgeResponse> response = badgeService.getBadgesFiltered(filterRequest);
+        return ResponseEntity.ok(ApiResponse.success(response, languageService.getMessage(MessageCode.BADGE_RETRIEVED)));
+    }
+
+    @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<BadgeResponse>>> getAllBadges() {
         List<BadgeResponse> response = badgeService.getAllBadges();
