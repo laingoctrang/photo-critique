@@ -14,6 +14,53 @@ body {
   outline: none;
 }
 
+/* Global scrollbar styles - transparent with no arrows */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: none;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Hide scrollbar buttons (arrows) - Chrome/Edge/Safari */
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Hide scrollbar corners */
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Hidden scrollbar utility class (for elements that need no scrollbar) */
+.hidden-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 .hidden-scrollbar::-webkit-scrollbar {
   display: none;
 }

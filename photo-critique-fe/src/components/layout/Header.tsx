@@ -1,55 +1,51 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks";
 import { Button, SearchBar } from "../common";
-import { UserRole } from "../../types/enums";
 import { SIDEBAR_MENU } from "../../constants";
 import { BellIcon } from "@heroicons/react/24/outline";
-
-interface User {
-  id: string;
-  name: string;
-}
-
-// Fake data
-const mockUsers: User[] = [
-  { id: "1", name: "Alice Johnson" },
-  { id: "2", name: "Bob Smith" },
-  { id: "3", name: "Charlie Brown" },
-  { id: "4", name: "David Wilson" },
-  { id: "5", name: "Eve Davis" },
-];
-
+import { userService } from "../../services/userService";
+import type { User } from "../../types";
 
 export const Header: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth()
   const showSearchBar = !location.pathname.includes("/admin") && !location.pathname.includes("/moderator");
 
   const getPageTitle = () => {
     const menuItem = SIDEBAR_MENU.find(item => item.path === location.pathname);
-    if (menuItem?.roles && menuItem?.roles.includes(UserRole.USER)) {
-      return null;
-    }
     return menuItem?.label || null;
   };
 
   const pageTitle = getPageTitle();
 
   async function handleSearch(query: string): Promise<User[]> {
-  // Giả lập delay mạng
-  await new Promise((resolve) => setTimeout(resolve, 300));
+    try {
+      const users = await userService.searchUsers(query);
+      return users;
+    } catch (error) {
+      console.error("Error searching users:", error);
+      return [];
+    }
+  }
 
-  // Lọc theo query (case-insensitive)
-  return mockUsers.filter((user) =>
-    user.name.toLowerCase().includes(query.toLowerCase())
-  );
-}
+  const handleUserClick = (selectedUser: User) => {
+    if (selectedUser.username) {
+      navigate(`/${selectedUser.username}`);
+    }
+  };
+
+  const handleEnter = (query: string) => {
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur">
-      <div className="flex items-center justify-between px-4 py-3 mt-2 gap-5">
-        {pageTitle && (
+      <div className="flex items-center justify-between py-3 gap-5 border-b border-gray-200">
+        {pageTitle && !showSearchBar && (
           <h2 className="text-3xl font-bold text-gray-900 whitespace-nowrap">
             {pageTitle}
           </h2>
@@ -58,9 +54,26 @@ export const Header: React.FC = () => {
         {showSearchBar && (
           <div className="flex-1">
           <SearchBar 
+            placeholder="Search users or posts"
             onSearch={handleSearch}
-            className="max-w-md m-auto"
-            renderResult={(user) => <span>{user.name}</span>}
+            onResultClick={handleUserClick}
+            onEnter={handleEnter}
+            className="max-w-sm lg:max-w-md"
+            renderResult={(user) => (
+              <div className="flex items-center gap-3">
+                <img
+                  src={user.profilePicture || "/default-avatar.png"}
+                  alt={user.username || user.fullName}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{user.fullName || user.username}</span>
+                  {user.username && (
+                    <span className="text-xs text-gray-500">@{user.username}</span>
+                  )}
+                </div>
+              </div>
+            )}
           />
         </div>
         )}

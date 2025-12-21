@@ -354,6 +354,7 @@ export const LoginSignup = () => {
                     className="w-full"
                     onClick={() => handleRedirectToProvider('google')}
                     size="small"
+                    disabled={loading}
                   >
                     Google
                   </Button>
@@ -365,6 +366,7 @@ export const LoginSignup = () => {
                     className="w-full"
                     onClick={() => handleRedirectToProvider('facebook')}
                     size="small"
+                    disabled={loading}
                   >
                     Facebook
                   </Button>

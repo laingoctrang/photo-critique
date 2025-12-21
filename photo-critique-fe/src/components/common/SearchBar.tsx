@@ -7,6 +7,8 @@ interface SearchBarProps<T> {
   className?: string;
   onSearch: (query: string) => Promise<T[]>;
   renderResult: (item: T) => React.ReactNode;
+  onResultClick?: (item: T) => void;
+  onEnter?: (query: string) => void;
   minLength?: number;
   debounceMs?: number;
 }
@@ -16,16 +18,20 @@ export function SearchBar<T>({
   className = "",
   onSearch,
   renderResult,
+  onResultClick,
+  onEnter,
   minLength = 1,
   debounceMs = 300,
 }: SearchBarProps<T>) {
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     if (searchText.length < minLength) {
       setResults([]);
+      setShowResults(false);
       return;
     }
 
@@ -34,6 +40,7 @@ export function SearchBar<T>({
       try {
         const res = await onSearch(searchText);
         setResults(res);
+        setShowResults(true);
       } finally {
         setLoading(false);
       }
@@ -41,6 +48,21 @@ export function SearchBar<T>({
 
     return () => clearTimeout(handler);
   }, [searchText, onSearch, debounceMs, minLength]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchText.trim().length >= minLength) {
+      setShowResults(false);
+      onEnter?.(searchText.trim());
+    } else if (e.key === "Escape") {
+      setShowResults(false);
+    }
+  };
+
+  const handleResultClick = (item: T) => {
+    setShowResults(false);
+    setSearchText("");
+    onResultClick?.(item);
+  };
 
   return (
     <div className={`relative w-full ${className}`}>
@@ -51,18 +73,20 @@ export function SearchBar<T>({
           variant="outline"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           leftIcon={MagnifyingGlassIcon}
-          className="h-10 text-sm"
+          className="h-10 text-sm shadow-xs border-gray-200 text-gray-700 p-3"
         />
       </div>
 
       {/* Suggestions */}
-      {results.length > 0 && (
+      {showResults && results.length > 0 && (
         <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-xl mt-1 shadow-md max-h-60 overflow-y-auto">
           {results.map((item, idx) => (
             <li
               key={idx}
+              onClick={() => handleResultClick(item)}
               className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
             >
               {renderResult(item)}

@@ -4,6 +4,7 @@ import { UserRoutes } from "./routes/UserRoutes";
 import { AdminRoutes } from "./routes/AdminRoutes";
 import { PublicRoutes } from "./routes/PublicRoutes";
 import { AuthProvider } from "./contexts";
+import { ModeratorRoutes } from "./routes/Moderator";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           {PublicRoutes}
           {UserRoutes}
           {AdminRoutes}
+          {ModeratorRoutes}
         </Routes>
       </AuthProvider>
     </BrowserRouter>

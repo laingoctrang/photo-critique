@@ -31,7 +31,7 @@ const getMenuItemsGroupedByCategory = (roles: UserRole[]) => {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className = "", isCollapsed = false, onToggle }) => {
   const { user } = useAuth();
-  if (!user || !user.roles || user.roles.length === 0) return null;
+  if (!user || !user.roles || user.roles.length === 0) return null; 
 
   const menuItems = getMenuItemsGroupedByCategory(user.roles);
 
@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", isCollapsed = 
             <img src="/logo.png" alt="Logo" className="h-9 w-9 object-cover rounded-xl" />
           </div>
           {!isCollapsed && (
-            <span className="font-bold text-xl bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] bg-clip-text text-transparent">
+            <span className="font-bold text-xl text-[#15B8A6]">
               PhotoVerse
             </span>
           )}
@@ -136,9 +136,8 @@ const MenuItem: React.FC<{ item: MenuItem; isCollapsed?: boolean }> = ({ item, i
         to={item.path}
         className={({ isActive }) =>
           `w-full flex items-center ${isCollapsed ? "justify-center px-2" : "space-x-3 px-4"} py-3 rounded-xl transition-all duration-300 group relative ${isActive
-            ? `bg-gradient-to-r from-[#15B8A6]/10 to-[#15B8A6]/5 text-[#0E7C70] font-medium 
-                 shadow-[0_2px_10px_-2px_rgba(21,184,166,0.2)] ${isCollapsed ? "" : "border-l-3"} border-[#15B8A6]}`
-            : "text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 hover:translate-x-1"
+            ? `bg-[#15B8A6]/15 text-[#0E7C70] font-medium ${isCollapsed ? "" : "border-l-3 border-[#15B8A6]"}`
+            : `text-gray-600 hover:bg-gray-100/80 ${isCollapsed ? "hover:scale-115" : "hover:translate-x-1"}`
           }`}
         title={isCollapsed ? item.label : undefined}
       >
@@ -148,7 +147,7 @@ const MenuItem: React.FC<{ item: MenuItem; isCollapsed?: boolean }> = ({ item, i
             <div className="flex-1 text-left">
               <div className="font-medium">{item.label}</div>
             </div>
-            <div className="w-2 h-2 bg-gradient-to-r from-[#15B8A6] to-[#2DD4BF] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="w-2 h-2 bg-[#15B8A6] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </>
         )}
       </NavLink>

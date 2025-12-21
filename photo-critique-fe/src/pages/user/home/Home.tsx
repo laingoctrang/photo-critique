@@ -94,7 +94,7 @@ export const Home = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loading variant="fullscreen" text="Loading posts..." />
+        <Loading variant="inline" text="Loading posts..." />
       </div>
     );
   }

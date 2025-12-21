@@ -4,3 +4,8 @@ export * from './ranking/Ranking';
 export * from './direct/Direct';
 export * from './create/Create';
 export * from './profile/Profile';
+export * from './profile/MyProfile';
+export * from './profile/UserProfile';
+export * from './profile/EditProfile';
+// export * from './search/SearchResults';
+export * from './ai-edit/AIEdit';

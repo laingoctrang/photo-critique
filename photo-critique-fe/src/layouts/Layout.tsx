@@ -7,10 +7,10 @@ export const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F6F8] px-2">
+    <div className="flex h-screen overflow-hidden bg-[#F5F6F8]">
       {/* Sidebar with toggle */}
-      <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? "" : "w-80"} overflow-hidden`}>
-        <div className="p-4 h-full">
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden`}>
+        <div className="py-4 pl-4 pr-0.5 h-full">
           <Sidebar 
             isCollapsed={!isSidebarOpen} 
             onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -18,10 +18,12 @@ export const Layout = () => {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Header />
-
-        <main className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex flex-col flex-1 overflow-hidden ml-1">
+        <div className="px-4">
+          <Header />
+        </div>
+        
+        <main className="flex-1 overflow-y-auto p-4">
           <Outlet />
         </main>
       </div>
