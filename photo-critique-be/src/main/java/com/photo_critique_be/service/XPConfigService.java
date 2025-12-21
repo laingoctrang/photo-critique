@@ -1,6 +1,8 @@
 package com.photo_critique_be.service;
 
+import com.photo_critique_be.dto.request.common.FilterRequest;
 import com.photo_critique_be.dto.request.xp.XPConfigRequest;
+import com.photo_critique_be.dto.response.common.PageResponse;
 import com.photo_critique_be.dto.response.xp.XPConfigResponse;
 import com.photo_critique_be.model.XPConfig;
 
@@ -11,6 +13,7 @@ public interface XPConfigService {
     XPConfig getConfig(String eventType);
     Map<String, XPConfig> getAllConfigs();
     List<XPConfigResponse> getAllConfigsResponse();
+    PageResponse<XPConfigResponse> getConfigsFiltered(FilterRequest filterRequest);
     XPConfigResponse createOrUpdateConfig(XPConfigRequest request);
     XPConfigResponse updatePoints(String eventType, Integer points);
     void deleteConfig(String eventType);

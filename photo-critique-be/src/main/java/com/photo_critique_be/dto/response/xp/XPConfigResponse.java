@@ -1,5 +1,6 @@
 package com.photo_critique_be.dto.response.xp;
 
+import com.photo_critique_be.enums.XPConfigStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,8 @@ public class XPConfigResponse {
     private Integer points;
     private String description;
     private String category;
-    private Boolean isActive;
+    private XPConfigStatus status;
+    private Boolean isActive; // Deprecated, use status instead. Kept for backward compatibility
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

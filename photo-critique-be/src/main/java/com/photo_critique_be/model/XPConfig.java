@@ -1,5 +1,6 @@
 package com.photo_critique_be.model;
 
+import com.photo_critique_be.enums.XPConfigStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +36,9 @@ public class XPConfig {
 
     @Field("is_active")
     private Boolean isActive;
+
+    @Field("status")
+    private XPConfigStatus status;
 
     @Field("category")
     private String category;
