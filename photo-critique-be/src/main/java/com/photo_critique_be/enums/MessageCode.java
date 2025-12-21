@@ -156,7 +156,13 @@ public enum MessageCode {
     XP_CONFIG_UPDATED("xp.config.updated"),
     XP_CONFIG_DELETED("xp.config.deleted"),
     XP_CONFIG_RETRIEVED("xp.config.retrieved"),
-    XP_EVENT_RETRIEVED("xp.event.retrieved");
+    XP_EVENT_RETRIEVED("xp.event.retrieved"),
+
+    // IMAGE GENERATION HISTORY
+    IMAGE_GENERATION_HISTORY_CREATED_SUCCESS("image.generation.history.created.success"),
+    IMAGE_GENERATION_HISTORY_GET_SUCCESS("image.generation.history.get.success"),
+    IMAGE_GENERATION_HISTORY_DELETED_SUCCESS("image.generation.history.deleted.success"),
+    IMAGE_GENERATION_HISTORY_NOT_FOUND("image.generation.history.not.found");
 
     private final String code;
 
