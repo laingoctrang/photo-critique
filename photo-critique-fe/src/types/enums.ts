@@ -14,6 +14,7 @@ export const AppTab = {
   DIRECT: 'direct',
   PROFILE: 'profile',
   CREATE: 'create',
+  AI_EDIT: 'ai-edit',
 
   // Admin tabs
   ADMIN_DASHBOARD: 'dashboard',
@@ -77,3 +78,14 @@ export const ReactionTargetType =  {
     MESSAGE: 'MESSAGE'
 } as const;
 export type ReactionTargetType = typeof ReactionTargetType[keyof typeof ReactionTargetType];
+
+export const PostStatus = {
+  DRAFTED: 'DRAFTED',
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  POSTED: 'POSTED',
+  REPORTED: 'REPORTED',
+  ADMIN_DELETED: 'ADMIN_DELETED',
+  VIOLATION: 'VIOLATION',
+  PENDING: 'PENDING',
+} as const;
+export type PostStatus = typeof PostStatus[keyof typeof PostStatus];

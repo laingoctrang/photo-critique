@@ -54,7 +54,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         // Variants
         "bg-[#15B8A6] text-white shadow-sm hover:bg-[#13A595] active:bg-[#119284] focus:ring-[#15B8A6] disabled:bg-gray-200 disabled:text-gray-400":
           variant === "primary",
-        "bg-white text-[#13A595] border border-[#13A595] shadow-sm hover:bg-[#F0FDFA] hover:border-[#119284] active:bg-[#E1F9F3] active:border-[#0F8A7A] focus:ring-[#15B8A6] disabled:bg-white disabled:text-gray-400 disabled:border-gray-300":
+        "bg-white text-[#13A595] border border-[#13A595] shadow-sm hover:bg-[#F0FDFA] hover:border-[#119284] focus:bg-[#15B8A6]/10 focus:ring-[#15B8A6]/20 focus:ring-offset-0 disabled:bg-white disabled:text-gray-400 disabled:border-gray-300":
           variant === "secondary",
         "bg-red-500 text-white shadow-sm hover:bg-red-600 active:bg-red-700 focus:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400":
           variant === "danger",

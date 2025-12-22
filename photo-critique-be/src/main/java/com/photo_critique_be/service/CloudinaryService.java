@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.photo_critique_be.model.embedded.ImageInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +16,9 @@ import java.util.*;
 public class CloudinaryService {
 
     private final Cloudinary cloudinary;
+    
+    @Value("${app.upload.max-file-size}") // Default: 25MB (25 * 1024 * 1024)
+    private long maxFileSize;
 
     public CloudinaryService(Cloudinary cloudinary) {
         this.cloudinary = cloudinary;
@@ -52,6 +56,7 @@ public class CloudinaryService {
 
     /**
      * Upload multiple files
+     * Continues processing other files even if one fails
      */
     public List<ImageInfo> uploadFiles(List<MultipartFile> files) {
         List<ImageInfo> uploadedFiles = new ArrayList<>();
@@ -60,14 +65,12 @@ public class CloudinaryService {
             try {
                 ImageInfo imageInfo = uploadFile(file);
                 uploadedFiles.add(imageInfo);
-            } catch (IOException e) {
-                log.error("Failed to upload file: {}", file.getOriginalFilename(), e);
-                // Option 1: Continue with other files
-                // Option 2: Throw exception to stop all
-                // throw new RuntimeException("Upload failed for: " + file.getOriginalFilename(), e);
+            } catch (Exception e) {
+                log.error("Failed to upload file: {} ({} bytes). Continuing with other files...", file.getOriginalFilename(), file.getSize(), e);
             }
         }
 
+        log.info("Upload completed: {}/{} files uploaded successfully", uploadedFiles.size(), files.size());
         return uploadedFiles;
     }
 
@@ -137,10 +140,10 @@ public class CloudinaryService {
             throw new IllegalArgumentException("File is empty");
         }
 
-        // Check file size (max 10MB)
-        long maxFileSize = 10 * 1024 * 1024; // 10MB
+        // Check file size (from environment variable, default 25MB)
         if (file.getSize() > maxFileSize) {
-            throw new IllegalArgumentException("File size exceeds 10MB limit");
+            long maxFileSizeMB = maxFileSize / (1024 * 1024);
+            throw new IllegalArgumentException(String.format("File size exceeds %dMB limit", maxFileSizeMB));
         }
 
         // Check file type
@@ -167,13 +170,6 @@ public class CloudinaryService {
      */
     private String generatePublicId(String originalFilename) {
         String fileName = UUID.randomUUID().toString();
-
-        // Keep extension if exists
-        if (originalFilename != null && originalFilename.contains(".")) {
-            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            fileName += extension;
-        }
-
         return fileName;
     }
 }

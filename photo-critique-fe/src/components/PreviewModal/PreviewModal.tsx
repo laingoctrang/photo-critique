@@ -97,7 +97,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         {/* Image/Video Preview */}
         <div className="flex items-center justify-center h-full">
           {currentItem.imageInfo?.contentType?.startsWith("image/") ||
-          currentItem.file?.type.startsWith("image/") ? (
+            currentItem.file?.type.startsWith("image/") ? (
             <img
               src={previewUrl}
               alt={currentItem.title || "Preview"}
@@ -117,12 +117,13 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           )}
         </div>
 
-        {/* Title and Counter */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg">
-          <p className="text-sm font-medium">
-            {currentItem.title || "Untitled"} ({currentIndex + 1} / {items.length})
-          </p>
-        </div>
+
+      </div>
+      {/* Title and Counter */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg">
+        <p className="text-sm font-medium">
+          {currentItem.title || "Untitled"} ({currentIndex + 1} / {items.length})
+        </p>
       </div>
     </div>
   );

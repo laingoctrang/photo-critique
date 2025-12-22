@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import {
+  ArrowUpTrayIcon,
   CloudArrowUpIcon,
   PhotoIcon,
 } from "@heroicons/react/24/outline";
@@ -9,6 +10,8 @@ import { uploadService } from "../../services/uploadService";
 import { moderationService } from "../../services/moderationService";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { showToast } from "../../utils";
+import { ToastType } from "../Toast";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -59,7 +62,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const remainingSlots = maxFiles - files.length;
 
       if (newFiles.length > remainingSlots) {
-        alert(`You can only upload ${remainingSlots} more file(s)`);
+        showToast(ToastType.ERROR, `You can only upload ${remainingSlots} more file(s)`);
         return;
       }
 
@@ -353,20 +356,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <CloudArrowUpIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-700 mb-2">
-            Choose a file or drag & drop it here
+          <CloudArrowUpIcon className="w-12 h-12 text-[#15B8A6] mx-auto mb-4 bg-[#15B8A6]/10 rounded-full p-2" />
+          <p className="text-lg font-bold text-gray-600 text-center mb-2">
+            Drag and drop your file here
           </p>
-          <p className="text-sm text-gray-500 mb-4">
-            JPEG, PNG formats, up to {maxSize / 1024 / 1024} MB.
+          <p className="text-sm text-gray-500 font-light mb-4">
+            Supported Formats: JPEG, PNG
+            <br />
+            Maximum file size: {maxSize / 1024 / 1024}MB
           </p>
+          
           <Button
             type="button"
-            variant="outline"
+            variant="primary"
             onClick={handleBrowseClick}
-            leftIcon={PhotoIcon}
+            rightIcon={ArrowUpTrayIcon}
+            className="text-sm"
           >
-            Browse File
+            Select File
           </Button>
           <input
             ref={fileInputRef}
@@ -376,6 +383,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             onChange={handleFileInputChange}
             className="hidden"
           />
+
+          
+          
         </div>
         );
     }
