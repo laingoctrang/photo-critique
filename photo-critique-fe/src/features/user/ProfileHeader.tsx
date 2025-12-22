@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../../components";
 import { CameraIcon, PaperAirplaneIcon, PencilIcon, PlusIcon } from "@heroicons/react/24/outline";
 import type { UserProfileResponse } from "../../services";
 import { useNavigate } from "react-router-dom";
+import { FollowersFollowingModal } from "./FollowersFollowingModal";
 
 interface ProfileHeaderProps {
   profile: UserProfileResponse;
@@ -44,12 +45,12 @@ const ProfileHeaderSection: React.FC<{
           {!isOwnProfile ? (
             <div className="flex gap-3 flex-shrink-0">
               <Button
-                variant={profile.isFollowing ? "secondary" : "primary"}
+                variant={profile.isFollowing ? "secondary" : profile.followStatus === "PENDING" ? "secondary" : "primary"}
                 className="w-full rounded-xl"
                 onClick={onFollow}
-                leftIcon={profile.isFollowing ? undefined : ({ className }) => <PlusIcon className={`${className} text-white stroke-[3] p-0.5 rounded-full border-1 border-white`} />}
+                leftIcon={profile.isFollowing || profile.followStatus === "PENDING" ? undefined : ({ className }) => <PlusIcon className={`${className} text-white stroke-[3] p-0.5 rounded-full border-1 border-white`} />}
               >
-                {profile.isFollowing ? "Following" : "Follow"}
+                {profile.isFollowing ? "Following" : profile.followStatus === "PENDING" ? "Pending" : "Follow"}
               </Button>
               <Button
                 variant="secondary"
@@ -65,7 +66,7 @@ const ProfileHeaderSection: React.FC<{
               <Button
                 variant="secondary"
                 className="w-full rounded-xl"
-                onClick={() => {navigate(`/user/profile/${profile.username}/edit`);}}
+                onClick={() => {navigate(`/profile/${profile.username}/edit`);}}
                 leftIcon={PencilIcon}
               >
                 Edit Profile
@@ -81,7 +82,12 @@ const ProfileHeaderSection: React.FC<{
           </div>
         )}
 
-        <ProfileStats postsCount={postsCount} followersCount={profile.followersCount || 0} followingCount={profile.followingCount || 0} />
+        <ProfileStats 
+          postsCount={postsCount} 
+          followersCount={profile.followersCount || 0} 
+          followingCount={profile.followingCount || 0}
+          userId={profile.id}
+        />
       </div>
     </div>
   );
@@ -92,7 +98,10 @@ export const ProfileStats: React.FC<{
   followersCount: number;
   followingCount: number;
   size?: "small" | "medium" | "large";
-}> = ({ postsCount, followersCount, followingCount, size = "large" }) => {
+  userId?: string;
+}> = ({ postsCount, followersCount, followingCount, size = "large", userId }) => {
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
   const formatNumber = (num: number | undefined): string => {
     if (!num) return "0";
     if (num >= 1000) {
@@ -139,16 +148,42 @@ export const ProfileStats: React.FC<{
         )}
 
         {/* Followers */}
-        <div className="text-left border-r border-gray-300">
+        <div 
+          className="text-left border-r border-gray-300 cursor-pointer hover:opacity-70 transition-opacity"
+          onClick={() => userId && setShowFollowersModal(true)}
+        >
           <div className={`${classes.number} font-bold text-gray-900`}>{formatNumber(followersCount)}</div>
           <div className={`${classes.label} text-gray-500 ${classes.margin}`}>FOLLOWERS</div>
         </div>
 
         {/* Following */}
-        <div className="text-left">
+        <div 
+          className="text-left cursor-pointer hover:opacity-70 transition-opacity"
+          onClick={() => userId && setShowFollowingModal(true)}
+        >
           <div className={`${classes.number} font-bold text-gray-900`}>{formatNumber(followingCount)}</div>
           <div className={`${classes.label} text-gray-500 ${classes.margin}`}>FOLLOWING</div>
         </div>
+
+        {/* Modals */}
+        {userId && (
+          <>
+            <FollowersFollowingModal
+              isOpen={showFollowersModal}
+              onClose={() => setShowFollowersModal(false)}
+              userId={userId}
+              type="followers"
+              title="Followers"
+            />
+            <FollowersFollowingModal
+              isOpen={showFollowingModal}
+              onClose={() => setShowFollowingModal(false)}
+              userId={userId}
+              type="following"
+              title="Following"
+            />
+          </>
+        )}
       </div>
     </div>
   );
@@ -180,7 +215,7 @@ const LevelBadges: React.FC<{ profile: UserProfileResponse }> = ({ profile }) =>
             <span className="text-2xl font-bold text-gray-700">Level {profile.level}</span>
           </div>
           <div className="text-base text-gray-500 font-light">
-            {xpProgress.current}/{xpProgress.max} XP
+            {/* {xpProgress.current}/{xpProgress.max} XP */}
           </div>
         </div>
 

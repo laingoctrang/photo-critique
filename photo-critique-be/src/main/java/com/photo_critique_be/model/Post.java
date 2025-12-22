@@ -1,5 +1,6 @@
 package com.photo_critique_be.model;
 
+import com.photo_critique_be.enums.PostStatus;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.model.embedded.ImageInfo;
 import lombok.Data;
@@ -20,8 +21,9 @@ import java.util.List;
 @AllArgsConstructor
 @Document(collection = "posts")
 @CompoundIndexes({
-    @CompoundIndex(name = "feed_query", def = "{'user_id': 1, 'is_deleted': 1, 'privacy': 1, 'created_at': -1}"),
-    @CompoundIndex(name = "user_posts", def = "{'user_id': 1, 'is_deleted': 1, 'created_at': -1}")
+    @CompoundIndex(name = "feed_query", def = "{'user_id': 1, 'status': 1, 'privacy': 1, 'created_at': -1}"),
+    @CompoundIndex(name = "user_posts", def = "{'user_id': 1, 'status': 1, 'created_at': -1}"),
+    @CompoundIndex(name = "status_query", def = "{'status': 1, 'created_at': -1}")
 })
 public class Post {
     @Id
@@ -39,6 +41,10 @@ public class Post {
 
     @Field("privacy")
     private PrivacyType privacy;
+
+    @Field("status")
+    @Indexed
+    private PostStatus status = PostStatus.POSTED; // Default to POSTED
 
     @Field("likes_count")
     private Integer likesCount = 0;

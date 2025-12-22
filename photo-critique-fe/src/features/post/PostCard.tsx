@@ -274,6 +274,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <ImageCarousel
               images={currentPost.imageUrls.map((img) => img.url)}
               fitMode="contain"
+              showPreview={true}
             />
           </div>
         </div>

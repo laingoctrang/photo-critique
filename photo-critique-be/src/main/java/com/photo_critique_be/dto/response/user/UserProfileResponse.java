@@ -15,6 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class UserProfileResponse {
     private String id;
+    private String email;
     private String username;
     private String profilePicture;
     private String bio;

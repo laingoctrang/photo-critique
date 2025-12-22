@@ -71,6 +71,8 @@ cloudinary:
 app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  upload:
+    max-file-size: ${MAX_FILE_SIZE:26214400}  # Default: 25MB (25 * 1024 * 1024 bytes)
 
   jwt:
     access:

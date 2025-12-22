@@ -9,6 +9,8 @@ import { uploadService } from "../../services/uploadService";
 import { moderationService } from "../../services/moderationService";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { showToast } from "../../utils";
+import { ToastType } from "../Toast";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -59,7 +61,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const remainingSlots = maxFiles - files.length;
 
       if (newFiles.length > remainingSlots) {
-        alert(`You can only upload ${remainingSlots} more file(s)`);
+        showToast(ToastType.ERROR, `You can only upload ${remainingSlots} more file(s)`);
         return;
       }
 

@@ -133,8 +133,8 @@ export const commentService = {
   ): Promise<{ imageUrl: string }> => {
     // Call external edit-image API
     const response = await axios.post<{ task_id: string; image_url?: string | null }>(
-      // 'https://biform-relatedly-lera.ngrok-free.dev/edit-image',
-      'https://fastapi-qwen-test.onrender.com/edit-image',
+      'https://biform-relatedly-lera.ngrok-free.dev/edit-image',
+      // 'https://fastapi-qwen-test.onrender.com/edit-image',
       {
         image_url: imageUrl,
         prompt: prompt,
@@ -165,8 +165,8 @@ export const commentService = {
             task_id: string;
             progress: number;
             image_url?: string;
-          // }>(`https://biform-relatedly-lera.ngrok-free.dev/progress/${taskId}`, {
-          }>(`https://fastapi-qwen-test.onrender.com/progress/${taskId}`, {
+          }>(`https://biform-relatedly-lera.ngrok-free.dev/progress/${taskId}`, {
+          // }>(`https://fastapi-qwen-test.onrender.com/progress/${taskId}`, {
             headers: {
               'Content-Type': 'application/json',
               'ngrok-skip-browser-warning': 'true',

@@ -35,7 +35,7 @@ function getRandomCaption() {
 }
 
 // Enum privacy
-const privacyValues = ["PUBLIC", "FRIENDS", "PRIVATE"];
+const privacyValues = ["PUBLIC", "FOLLOWER_ONLY", "PRIVATE"];
 
 // Tạo 20 posts
 const posts = Array.from({ length: 200 }).map((_, i) => {

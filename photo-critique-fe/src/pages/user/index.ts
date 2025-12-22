@@ -7,5 +7,5 @@ export * from './profile/Profile';
 export * from './profile/MyProfile';
 export * from './profile/UserProfile';
 export * from './profile/EditProfile';
-// export * from './search/SearchResults';
+export * from './search/SearchResults';
 export * from './ai-edit/AIEdit';

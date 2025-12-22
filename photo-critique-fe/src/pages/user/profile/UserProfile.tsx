@@ -3,9 +3,7 @@ import { useParams } from "react-router-dom";
 import { userService, type UserProfileResponse, type PostListItemResponse } from "../../../services";
 import { Loading, ToastType } from "../../../components";
 import { showToast } from "../../../utils";
-import { ProfileHeader, ProfileTabs, PostsGrid, AboutSection, UnfollowModal } from "../../../features/user";
-import { PostDetailModal } from "../../../features";
-import type { TabType } from "../../../features/user/ProfileTabs";
+import { ProfileHeader, ProfileTabs, PostsGrid, AboutSection, UnfollowModal, PostDetailModal, type TabType } from "../../../features";
 import { useFollowUser } from "../../../hooks";
 
 export const UserProfile = () => {
@@ -63,25 +61,59 @@ export const UserProfile = () => {
   const { follow, unfollow, showConfirmUnfollowModal, setShowConfirmUnfollowModal } = useFollowUser({
     userId: profile?.id || "",
     isFollowing: profile?.isFollowing || false,
-    onFollowSuccess: () => {
-      setProfile((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          isFollowing: true,
-          followersCount: (prev.followersCount || 0) + 1,
-        };
-      });
+    followStatus: profile?.followStatus,
+    onFollowSuccess: async () => {
+      // Reload profile to get latest data from server
+      try {
+        const profileData = await userService.getUserProfileByUsername(username || "");
+        setProfile(profileData);
+      } catch (error: any) {
+        // Fallback to optimistic update
+        setProfile((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isFollowing: prev.followStatus === "ACCEPTED" || !prev.followStatus, // Set to true if ACCEPTED or new follow
+            followStatus: prev.followStatus || "ACCEPTED",
+            followersCount: (prev.followersCount || 0) + (prev.followStatus === "ACCEPTED" || !prev.followStatus ? 1 : 0),
+          };
+        });
+      }
     },
-    onUnfollowSuccess: () => {
-      setProfile((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          isFollowing: false,
-          followersCount: Math.max((prev.followersCount || 0) - 1, 0),
-        };
-      });
+    onUnfollowSuccess: async () => {
+      // Reload profile to get latest data from server
+      try {
+        const profileData = await userService.getUserProfileByUsername(username || "");
+        setProfile(profileData);
+      } catch (error: any) {
+        // Fallback to optimistic update
+        setProfile((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isFollowing: false,
+            followStatus: undefined,
+            followersCount: Math.max((prev.followersCount || 0) - 1, 0),
+          };
+        });
+      }
+    },
+    onPendingCancelSuccess: async () => {
+      // Reload profile after canceling pending request
+      try {
+        const profileData = await userService.getUserProfileByUsername(username || "");
+        setProfile(profileData);
+      } catch (error: any) {
+        // Fallback to optimistic update
+        setProfile((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isFollowing: false,
+            followStatus: undefined,
+          };
+        });
+      }
     },
   });
 

@@ -45,6 +45,7 @@ export interface PageResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+  last?: boolean;
 }
 
 export interface UserListItemResponse {

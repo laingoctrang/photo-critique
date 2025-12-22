@@ -25,10 +25,10 @@ public class ImageGenerationHistory {
     private String prompt;
 
     @Field("input_image_url")
-    private String input_image_url;
+    private String inputImageUrl;
 
     @Field("out_image_url")
-    private String out_image_url;
+    private String outImageUrl;
 
     @Field("created_at")
     @CreatedDate

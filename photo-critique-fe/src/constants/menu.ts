@@ -42,7 +42,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     path: "/create",
   },
   {
-    id: AppTab.CREATE,
+    id: AppTab.AI_EDIT,
     label: "AI Edit",
     icon: SparklesIcon,
     category: TabCategory.MAIN,

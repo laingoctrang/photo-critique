@@ -1,0 +1,2 @@
+export { BadgeManagement } from './BadgeManagement';
+

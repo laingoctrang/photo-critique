@@ -38,8 +38,8 @@ public class ImageGenerationHistoryServiceImpl implements ImageGenerationHistory
         ImageGenerationHistory history = new ImageGenerationHistory();
         history.setUserId(currentUserId);
         history.setPrompt(request.getPrompt());
-        history.setInput_image_url(request.getInputImageUrl());
-        history.setOut_image_url(request.getOutImageUrl());
+        history.setInputImageUrl(request.getInputImageUrl());
+        history.setOutImageUrl(request.getOutImageUrl());
 
         history = repository.save(history);
 

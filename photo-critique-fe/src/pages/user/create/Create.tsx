@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   GlobeAltIcon,
   LinkIcon,
@@ -37,16 +37,80 @@ const TAG_SUGGESTIONS = [
 
 export const Create = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editPostId = searchParams.get("edit");
+
+  const initialFiles = searchParams.get("imageUrl");
+
+  let fileItem: FileUploadItemData | undefined;
+  if (initialFiles) {
+    fileItem = {
+      id: `${initialFiles}`,
+      imageInfo: {
+        url: initialFiles,
+        name: initialFiles.split("/").pop() || "",
+        size: Number(searchParams.get("size") || 0),
+        contentType: "image/" + (initialFiles.split(".").pop() || "jpg"),
+      },
+      title: initialFiles.split("/").pop() || "",
+      progress: 100,
+      status: "completed",
+    };
+  }
+  
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyType>(PrivacyType.PUBLIC);
-  const [files, setFiles] = useState<FileUploadItemData[]>([]);
+  const [files, setFiles] = useState<FileUploadItemData[]>(fileItem ? [fileItem] : []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [showCaptionViolationModal, setShowCaptionViolationModal] = useState(false);
+  const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+
+  // Load draft post if editing
+  useEffect(() => {
+    const loadDraftPost = async () => {
+      if (!editPostId) return;
+      
+      try {
+        setIsLoadingDraft(true);
+        const post = await postService.getPostById(editPostId);
+        
+        // Check if post is a draft
+        if (post.status !== "DRAFTED") {
+          showToast(ToastType.ERROR, "This post is not a draft");
+          navigate("/create");
+          return;
+        }
+        
+        // Populate form with draft data
+        setCaption(post.caption || "");
+        setTags(post.tags || []);
+        setPrivacy(post.privacy);
+        
+        // Convert imageUrls to FileUploadItemData format
+        const draftFiles: FileUploadItemData[] = (post.imageUrls || []).map((img, index) => ({
+          id: `draft-${index}`,
+          file: null,
+          preview: img.url,
+          status: "completed" as const,
+          imageInfo: img,
+          moderationResult: undefined,
+        }));
+        setFiles(draftFiles);
+      } catch (error: any) {
+        showToast(ToastType.ERROR, error?.message || "Failed to load draft post");
+        navigate("/create");
+      } finally {
+        setIsLoadingDraft(false);
+      }
+    };
+
+    loadDraftPost();
+  }, [editPostId, navigate]);
 
   const handleFilesChange = (newFiles: FileUploadItemData[]) => {
     setFiles(newFiles);
@@ -114,16 +178,6 @@ export const Create = () => {
     }
 
     try {
-      if (isDraft) {
-        setIsSavingDraft(true);
-        // TODO: Implement save as draft functionality
-        showToast(ToastType.SUCCESS, "Draft saved successfully");
-        setIsSavingDraft(false);
-        return;
-      }
-
-      setIsSubmitting(true);
-
       // Prepare image info with titles
       const imageInfos: ImageInfo[] = completedFiles.map((file) => ({
         url: file.imageInfo!.url,
@@ -132,18 +186,64 @@ export const Create = () => {
         contentType: file.imageInfo!.contentType,
       }));
 
-      // Create post
-      const response = await postService.createPost({
-        imageUrls: imageInfos || undefined,
-        caption: caption.trim() || undefined,
-        privacy,
-        tags: tags.length > 0 ? tags : undefined,
-      });
+      if (isDraft) {
+        setIsSavingDraft(true);
+        
+        if (editPostId) {
+          // Update existing draft
+          const response = await postService.updatePost(editPostId, {
+            imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+            caption: caption.trim() || undefined,
+            privacy,
+            tags: tags.length > 0 ? tags : undefined,
+            status: "DRAFTED",
+          });
+          showToast(ToastType.SUCCESS, response.message || "Draft updated successfully!");
+        } else {
+          // Create new draft
+          const response = await postService.createPost({
+            imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+            caption: caption.trim() || undefined,
+            privacy,
+            tags: tags.length > 0 ? tags : undefined,
+            status: "DRAFTED",
+          });
+          showToast(ToastType.SUCCESS, response.message || "Draft saved successfully!");
+          // Update URL to include edit param
+          navigate(`/create?edit=${response.id}`, { replace: true });
+        }
+        
+        setIsSavingDraft(false);
+        return;
+      }
 
-      showToast(ToastType.SUCCESS, response.message || "Post created successfully!");
-      navigate(`/post/${response.id}`);
+      setIsSubmitting(true);
+
+      if (editPostId) {
+        // Update draft to POSTED
+        const response = await postService.updatePost(editPostId, {
+          imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+          caption: caption.trim() || undefined,
+          privacy,
+          tags: tags.length > 0 ? tags : undefined,
+          status: "POSTED",
+        });
+        showToast(ToastType.SUCCESS, response.message || "Post published successfully!");
+        navigate(`/post/${response.id}`);
+      } else {
+        // Create new post
+        const response = await postService.createPost({
+          imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+          caption: caption.trim() || undefined,
+          privacy,
+          tags: tags.length > 0 ? tags : undefined,
+          status: "POSTED",
+        });
+        showToast(ToastType.SUCCESS, response.message || "Post created successfully!");
+        navigate(`/post/${response.id}`);
+      }
     } catch (error: any) {
-      showToast(ToastType.ERROR, error.message || "Failed to create post");
+      showToast(ToastType.ERROR, error.message || `Failed to ${editPostId ? "update" : "create"} post`);
     } finally {
       setIsSubmitting(false);
     }
@@ -169,6 +269,16 @@ export const Create = () => {
       description: "Only you can see this post",
     },
   ];
+
+  if (isLoadingDraft) {
+    return (
+      <div className="container mx-auto max-w-6xl px-6 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading draft...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-6xl px-6 py-8">

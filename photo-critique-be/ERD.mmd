@@ -1,0 +1,211 @@
+erDiagram
+
+    AIRequest {
+        String _id PK
+        String comment_id
+        String user_id
+        String post_id
+        String prompt
+        String original_image
+        String generated_image
+        AIRequestStatus status
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Badge {
+        String _id PK
+        String name
+        String description
+        String icon_url
+        Number xp_threshold
+        Number level
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Comment {
+        String _id PK
+        String post_id
+        String user_id
+        String content
+        String ai_generated_image
+        String original_image
+        String parent_comment_id
+        Boolean is_helpful
+        Number likes_count
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Conversation {
+        String _id PK
+        Array participants
+        LastMessage last_message
+        Number unread_count
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Follow {
+        String _id PK
+        String follower_id
+        String following_id
+        FollowStatus status
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Message {
+        String _id PK
+        String conversation_id
+        String sender_id
+        String receiver_id
+        String content
+        Array images
+        MessageType message_type
+        Boolean is_read
+        DateTime read_at
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Notification {
+        String _id PK
+        String user_id
+        NotificationType type
+        String related_user_id
+        String related_post_id
+        String related_comment_id
+        String message
+        Boolean is_read
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Post {
+        String _id PK
+        String user_id
+        String caption IDX
+        Array image_urls IDX
+        Enum privacy IDX
+        PostStatus status
+        Number likes_count IDX
+        Number comments_count IDX
+        Number shares_count
+        Array tags
+        DateTime created_at
+        DateTime updated_at IDX
+        String original_post_id IDX
+        Boolean is_deleted IDX
+        DateTime deleted_at IDX
+        String deleted_by IDX
+    }
+
+    Reaction {
+        String _id PK
+        String user_id
+        String target_id IDX
+        Enum reaction_type IDX
+        DateTime created_at IDX
+    }
+
+    SavedPost {
+        String _id PK
+        String user_id UK
+        String post_id UK
+        DateTime saved_at IDX
+    }
+
+    Share {
+        String _id PK
+        String user_id
+        String post_id
+        String original_post_id
+        String caption
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    Tag {
+        String _id PK
+        String description UK
+        Number post_count UK
+        DateTime created_at UK
+        DateTime updated_at
+    }
+
+    User {
+        String _id PK
+        String password UK
+        String profile_picture UK
+        String bio UK
+        String full_name
+        Boolean is_online
+        DateTime last_seen
+        Enum privacy_setting
+        Number xp_points
+        Number level
+        Array badges
+        Number followers_count
+        Number following_count
+        Array roles
+        boolean enabled
+        DateTime created_at
+        DateTime updated_at
+        AuthProvider auth_provider
+        String provider_id
+    }
+
+    XPConfig {
+        String _id PK
+        String event_type
+        String name
+        Number points
+        String description
+        Boolean is_active
+        XPConfigStatus status
+        String category
+        Number version
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    XPEvent {
+        String _id PK
+        String user_id
+        String event_type
+        Number points
+        String related_post_id
+        String related_comment_id
+        DateTime created_at
+        DateTime updated_at
+    }
+
+    %% Relationships
+    AIRequest }o--|| Comment : "comment_id"
+    AIRequest }o--|| User : "user_id"
+    AIRequest }o--|| Post : "post_id"
+    Comment }o--|| Post : "post_id"
+    Comment }o--|| User : "user_id"
+    Comment }o--|| Comment : "parent_comment_id"
+    Conversation }o--o{ User : "participants"
+    Follow }o--o{ User : "follower_id"
+    Follow }o--o{ User : "following_id"
+    Message }o--|| Conversation : "conversation_id"
+    Message }o--|| User : "sender_id"
+    Message }o--|| User : "receiver_id"
+    Notification }o--|| User : "user_id"
+    Notification }o--|| User : "related_user_id"
+    Notification }o--|| Post : "related_post_id"
+    Notification }o--|| Comment : "related_comment_id"
+    Post }o--|| User : "user_id"
+    Reaction }o--|| User : "user_id"
+    SavedPost }o--|| User : "user_id"
+    SavedPost }o--|| Post : "post_id"
+    Share }o--|| User : "user_id"
+    Share }o--|| Post : "post_id"
+    Share }o--|| Post : "original_post_id"
+    XPEvent }o--|| User : "user_id"
+    XPEvent }o--|| Post : "related_post_id"
+    XPEvent }o--|| Comment : "related_comment_id"
