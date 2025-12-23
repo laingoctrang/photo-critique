@@ -1,10 +1,12 @@
 package com.photo_critique_be.dto.request.post;
 
+import com.photo_critique_be.enums.PostStatus;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.model.embedded.ImageInfo;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.List;
@@ -12,6 +14,8 @@ import java.util.List;
 @Data
 public class CreatePostRequest {
 
+    @NotNull(message = "Images are required")
+    @Size(min = 1, message = "At least one image is required")
     private List<ImageInfo> imageUrls;
 
     private String caption;
@@ -21,11 +25,6 @@ public class CreatePostRequest {
 
     private List<String> tags;
 
-    @AssertTrue(message = "Post must have at least a caption or an image")
-    private boolean isCaptionOrImagePresent() {
-        boolean hasCaption = caption != null && !caption.trim().isEmpty();
-        boolean hasImage = imageUrls != null && !imageUrls.isEmpty();
-        return hasCaption || hasImage;
-    }
+    private PostStatus status;
 }
 

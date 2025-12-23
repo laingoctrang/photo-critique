@@ -44,7 +44,7 @@ public class EmailContentService {
         return processTemplate(WELCOME_TEMPLATE, locale, Map.of(
                 "username", username,
                 "loginUrl", loginUrl,
-                "supportEmail", "support@photo-critique.com",
+                "supportEmail", "support@photo-verse.com",
                 "currentYear", java.time.Year.now().getValue()
         ));
     }

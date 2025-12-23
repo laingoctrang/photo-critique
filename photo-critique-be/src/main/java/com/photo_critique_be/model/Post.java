@@ -1,11 +1,14 @@
 package com.photo_critique_be.model;
 
+import com.photo_critique_be.enums.PostStatus;
 import com.photo_critique_be.enums.PrivacyType;
 import com.photo_critique_be.model.embedded.ImageInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -20,8 +23,9 @@ import java.util.List;
 @AllArgsConstructor
 @Document(collection = "posts")
 @CompoundIndexes({
-    @CompoundIndex(name = "feed_query", def = "{'user_id': 1, 'is_deleted': 1, 'privacy': 1, 'created_at': -1}"),
-    @CompoundIndex(name = "user_posts", def = "{'user_id': 1, 'is_deleted': 1, 'created_at': -1}")
+    @CompoundIndex(name = "feed_query", def = "{'user_id': 1, 'status': 1, 'privacy': 1, 'created_at': -1}"),
+    @CompoundIndex(name = "user_posts", def = "{'user_id': 1, 'status': 1, 'created_at': -1}"),
+    @CompoundIndex(name = "status_query", def = "{'status': 1, 'created_at': -1}")
 })
 public class Post {
     @Id
@@ -40,6 +44,10 @@ public class Post {
     @Field("privacy")
     private PrivacyType privacy;
 
+    @Field("status")
+    @Indexed
+    private PostStatus status = PostStatus.POSTED; // Default to POSTED
+
     @Field("likes_count")
     private Integer likesCount = 0;
 
@@ -54,9 +62,11 @@ public class Post {
 
     @Field("created_at")
     @Indexed
+    @CreatedDate
     private LocalDateTime createdAt;
 
     @Field("updated_at")
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @Field("original_post_id")

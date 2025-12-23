@@ -159,7 +159,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
 
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         try {
             userRepository.save(user);
         } catch (Exception e) {
