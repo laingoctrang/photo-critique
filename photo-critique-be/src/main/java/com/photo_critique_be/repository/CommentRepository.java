@@ -21,5 +21,12 @@ public interface CommentRepository extends MongoRepository<Comment, String> {
     long countByPostId(String postId);
     Optional<Comment> findByIdAndUserId(String id, String userId);
     int deleteByPostId(String postId);
+    
+    // Find comments by post_id and original_image
+    Page<Comment> findByPostIdAndOriginalImageAndParentCommentIdIsNullOrderByCreatedAtDesc(
+        String postId, 
+        String originalImage, 
+        Pageable pageable
+    );
 }
 

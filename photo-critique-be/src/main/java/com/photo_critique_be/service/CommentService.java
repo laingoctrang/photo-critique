@@ -11,6 +11,7 @@ public interface CommentService {
     CommentResponse updateComment(String commentId, UpdateCommentRequest request);
     void deleteComment(String commentId);
     Page<CommentResponse> getCommentsByPostId(String postId, Pageable pageable);
+    Page<CommentResponse> getCommentsByPostIdAndOriginalImage(String postId, String originalImage, Pageable pageable);
     void markCommentAsHelpful(String commentId);
     void likeComment(String commentId);
     void unlikeComment(String commentId);

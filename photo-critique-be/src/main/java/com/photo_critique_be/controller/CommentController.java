@@ -35,8 +35,14 @@ public class CommentController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<CommentResponse>>> getComments(
             @PathVariable String postId,
+            @RequestParam(required = false) String originalImage,
             @PageableDefault(size = 20) Pageable pageable) {
-        Page<CommentResponse> response = commentService.getCommentsByPostId(postId, pageable);
+        Page<CommentResponse> response;
+        if (originalImage != null && !originalImage.isEmpty()) {
+            response = commentService.getCommentsByPostIdAndOriginalImage(postId, originalImage, pageable);
+        } else {
+            response = commentService.getCommentsByPostId(postId, pageable);
+        }
         return ResponseEntity.ok(ApiResponse.success(response, 
                 languageService.getMessage(MessageCode.COMMENT_GET_SUCCESS)));
     }

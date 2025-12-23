@@ -203,6 +203,32 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public Page<CommentResponse> getCommentsByPostIdAndOriginalImage(String postId, String originalImage, Pageable pageable) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND)));
+
+        // Get top-level comments (no parent) filtered by original_image
+        Page<Comment> topLevelComments = commentRepository.findByPostIdAndOriginalImageAndParentCommentIdIsNullOrderByCreatedAtDesc(
+                postId, originalImage, pageable);
+
+        List<CommentResponse> responses = topLevelComments.getContent().stream()
+                .map(comment -> {
+                    CommentResponse response = buildCommentResponse(comment, currentUserId);
+                    // Get replies
+                    List<Comment> replies = commentRepository.findByParentCommentId(comment.getId());
+                    List<CommentResponse> replyResponses = replies.stream()
+                            .map(reply -> buildCommentResponse(reply, currentUserId))
+                            .collect(Collectors.toList());
+                    response.setReplies(replyResponses);
+                    return response;
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, topLevelComments.getTotalElements());
+    }
+
+    @Override
     @Transactional
     public void markCommentAsHelpful(String commentId) {
         String currentUserId = SecurityUtil.getCurrentUserId();
