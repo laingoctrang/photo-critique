@@ -1,4 +1,6 @@
 export { CommentItem } from './CommentItem';
+export { CommentImage } from './CommentImage';
 export { CommentInput } from './CommentInput';
 export { CommentSection } from './CommentSection';
-export { CommentImage } from './CommentImage';
+export { CreateImageFromCommentsModal } from './CreateImageFromCommentsModal';
+

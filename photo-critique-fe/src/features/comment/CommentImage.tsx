@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { EyeIcon, ArrowsRightLeftIcon, XMarkIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { Button } from "../common/Button";
+import { Button } from "../../components/common/Button";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Modal } from "../common/Modal";
+import { Modal } from "../../components/common/Modal";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

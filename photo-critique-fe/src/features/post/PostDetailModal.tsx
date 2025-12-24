@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CommentSection } from "../../components/Comment";
+import { CommentSection } from "../comment";
 import { postService, type PostResponse } from "../../services";
 import { showToast } from "../../utils";
 import { Loading, ToastType } from "../../components";
@@ -75,12 +75,12 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
         ) : post ? (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 flex-1 min-h-0 overflow-hidden">
             {/* Left: Post Display */}
-            <div className="flex-shrink-0 lg:col-span-3 overflow-y-auto hidden-scrollbar max-h-full">
+            <div className="flex-shrink-0 lg:col-span-3 overflow-y-auto hidden-scrollbar">
               <PostCard post={post} isViewDetail={true} />
             </div>
 
             {/* Right: Comment Section */}
-            <div className="flex-shrink-0 min-h-0 lg:col-span-2 overflow-y-auto max-h-full">
+            <div className="flex-shrink-0 min-h-0 lg:col-span-2">
               <CommentSection
                 postId={post.id}
                 commentsCount={commentsCount}

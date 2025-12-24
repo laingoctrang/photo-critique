@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   GlobeAltIcon,
   LinkIcon,
@@ -37,16 +37,80 @@ const TAG_SUGGESTIONS = [
 
 export const Create = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editPostId = searchParams.get("edit");
+
+  const initialFiles = searchParams.get("imageUrl");
+
+  let fileItem: FileUploadItemData | undefined;
+  if (initialFiles) {
+    fileItem = {
+      id: `${initialFiles}`,
+      imageInfo: {
+        url: initialFiles,
+        name: initialFiles.split("/").pop() || "",
+        size: Number(searchParams.get("size") || 0),
+        contentType: "image/" + (initialFiles.split(".").pop() || "jpg"),
+      },
+      title: initialFiles.split("/").pop() || "",
+      progress: 100,
+      status: "completed",
+    };
+  }
+
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyType>(PrivacyType.PUBLIC);
-  const [files, setFiles] = useState<FileUploadItemData[]>([]);
+  const [files, setFiles] = useState<FileUploadItemData[]>(fileItem ? [fileItem] : []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [showCaptionViolationModal, setShowCaptionViolationModal] = useState(false);
+  const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+
+  // Load draft post if editing
+  useEffect(() => {
+    const loadDraftPost = async () => {
+      if (!editPostId) return;
+
+      try {
+        setIsLoadingDraft(true);
+        const post = await postService.getPostById(editPostId);
+
+        // Check if post is a draft
+        if (post.status !== "DRAFTED") {
+          showToast(ToastType.ERROR, "This post is not a draft");
+          navigate("/create");
+          return;
+        }
+
+        // Populate form with draft data
+        setCaption(post.caption || "");
+        setTags(post.tags || []);
+        setPrivacy(post.privacy);
+
+        // Convert imageUrls to FileUploadItemData format
+        const draftFiles: FileUploadItemData[] = (post.imageUrls || []).map((img, index) => ({
+          id: `draft-${index}`,
+          file: null,
+          preview: img.url,
+          status: "completed" as const,
+          imageInfo: img,
+          moderationResult: undefined,
+        }));
+        setFiles(draftFiles);
+      } catch (error: any) {
+        showToast(ToastType.ERROR, error?.message || "Failed to load draft post");
+        navigate("/create");
+      } finally {
+        setIsLoadingDraft(false);
+      }
+    };
+
+    loadDraftPost();
+  }, [editPostId, navigate]);
 
   const handleFilesChange = (newFiles: FileUploadItemData[]) => {
     setFiles(newFiles);
@@ -114,16 +178,6 @@ export const Create = () => {
     }
 
     try {
-      if (isDraft) {
-        setIsSavingDraft(true);
-        // TODO: Implement save as draft functionality
-        showToast(ToastType.SUCCESS, "Draft saved successfully");
-        setIsSavingDraft(false);
-        return;
-      }
-
-      setIsSubmitting(true);
-
       // Prepare image info with titles
       const imageInfos: ImageInfo[] = completedFiles.map((file) => ({
         url: file.imageInfo!.url,
@@ -132,18 +186,64 @@ export const Create = () => {
         contentType: file.imageInfo!.contentType,
       }));
 
-      // Create post
-      const response = await postService.createPost({
-        imageUrls: imageInfos || undefined,
-        caption: caption.trim() || undefined,
-        privacy,
-        tags: tags.length > 0 ? tags : undefined,
-      });
+      if (isDraft) {
+        setIsSavingDraft(true);
 
-      showToast(ToastType.SUCCESS, response.message || "Post created successfully!");
-      navigate(`/post/${response.id}`);
+        if (editPostId) {
+          // Update existing draft
+          const response = await postService.updatePost(editPostId, {
+            imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+            caption: caption.trim() || undefined,
+            privacy,
+            tags: tags.length > 0 ? tags : undefined,
+            status: "DRAFTED",
+          });
+          showToast(ToastType.SUCCESS, response.message || "Draft updated successfully!");
+        } else {
+          // Create new draft
+          const response = await postService.createPost({
+            imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+            caption: caption.trim() || undefined,
+            privacy,
+            tags: tags.length > 0 ? tags : undefined,
+            status: "DRAFTED",
+          });
+          showToast(ToastType.SUCCESS, response.message || "Draft saved successfully!");
+          // Update URL to include edit param
+          navigate(`/create?edit=${response.id}`, { replace: true });
+        }
+
+        setIsSavingDraft(false);
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      if (editPostId) {
+        // Update draft to POSTED
+        const response = await postService.updatePost(editPostId, {
+          imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+          caption: caption.trim() || undefined,
+          privacy,
+          tags: tags.length > 0 ? tags : undefined,
+          status: "POSTED",
+        });
+        showToast(ToastType.SUCCESS, response.message || "Post published successfully!");
+        navigate(`/post/${response.id}`);
+      } else {
+        // Create new post
+        const response = await postService.createPost({
+          imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
+          caption: caption.trim() || undefined,
+          privacy,
+          tags: tags.length > 0 ? tags : undefined,
+          status: "POSTED",
+        });
+        showToast(ToastType.SUCCESS, response.message || "Post created successfully!");
+        navigate(`/post/${response.id}`);
+      }
     } catch (error: any) {
-      showToast(ToastType.ERROR, error.message || "Failed to create post");
+      showToast(ToastType.ERROR, error.message || `Failed to ${editPostId ? "update" : "create"} post`);
     } finally {
       setIsSubmitting(false);
     }
@@ -170,18 +270,25 @@ export const Create = () => {
     },
   ];
 
-  return (
-    <div className="container mx-auto max-w-6xl px-6 py-8">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create Post</h1>
+  if (isLoadingDraft) {
+    return (
+      <div className="container mx-auto max-w-6xl px-6 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading draft...</div>
+        </div>
+      </div>
+    );
+  }
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  return (
+    <div className="h-full bg-white rounded-3xl shadow-sm flex flex-col">
+      <div className="p-6 h-full flex flex-col overflow-hidden">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 min-h-0">
           {/* Left Column - File Upload */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Upload Files
-              </h2>
+          <div className="flex flex-col h-full min-h-0 overflow-hidden">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6 flex-shrink-0">Create Post</h1>
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2 hidden-scrollbar">
               <FileUpload
                 files={files}
                 onFilesChange={handleFilesChange}
@@ -190,12 +297,14 @@ export const Create = () => {
                 maxFiles={10}
                 acceptedTypes="image/*"
                 maxSize={10 * 1024 * 1024} // 10MB
+                className="w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
               />
             </div>
           </div>
 
           {/* Right Column - Post Details */}
-          <div className="space-y-6">
+          <div className="flex flex-col h-full min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto space-y-6 px-1">
             {/* Caption */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -211,7 +320,7 @@ export const Create = () => {
             </div>
 
             {/* Tags */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tags
               </label>
@@ -222,7 +331,7 @@ export const Create = () => {
                 placeholder="Add a tag..."
                 maxTags={10}
               />
-            </div>
+            </div> */}
 
             {/* Privacy */}
             <div>
@@ -240,10 +349,9 @@ export const Create = () => {
                       onClick={() => setPrivacy(option.value)}
                       className={`
                         flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
-                        ${
-                          isSelected
-                            ? "border-[#15B8A6] bg-[#F0FDFA] text-[#15B8A6]"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                        ${isSelected
+                          ? "border-[#15B8A6] bg-[#F0FDFA] text-[#15B8A6]"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                         }
                       `}
                     >
@@ -255,8 +363,10 @@ export const Create = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            </div>
+            
+            {/* Action Buttons - Fixed at bottom */}
+            <div className="flex gap-3 mt-auto flex-shrink-0 border-t border-gray-200 pt-4">
               <Button
                 variant="outline"
                 onClick={() => handleSubmit(true)}
@@ -322,7 +432,7 @@ export const Create = () => {
                   <h3 className="text-xl font-bold text-white">
                     Content Policy Violation
                   </h3>
-                  
+
                 </div>
               </div>
             </div>

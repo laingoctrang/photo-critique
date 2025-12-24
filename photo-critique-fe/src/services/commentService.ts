@@ -53,13 +53,16 @@ export const commentService = {
     postId: string,
     page: number = 0,
     size: number = 10,
-    sort: CommentSortOption = 'newest'
+    sort: CommentSortOption = 'newest',
+    originalImage?: string
   ): Promise<CommentListResponse> => {
+    const params: any = { page, size, sort };
+    if (originalImage) {
+      params.originalImage = originalImage;
+    }
     const response = await api.get<ApiResponse<CommentListResponse>>(
       `/posts/${postId}/comments`,
-      {
-        params: { page, size, sort },
-      }
+      { params }
     );
     return response.data.data;
   },

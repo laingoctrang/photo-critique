@@ -1,21 +1,25 @@
 import React, { useEffect, useState, useRef } from "react";
 import { PrivacyType, ReactionType } from "../../types";
-import { Reaction, ContentExpandable, ImageCarousel, ToastType } from "../../components";
+import { Reaction, ContentExpandable, ImageCarousel, ToastType, Button } from "../../components";
 import { showToast, formatDateTime } from "../../utils";
 import { postService, type PostListItemResponse, type UserPostResponse } from "../../services";
 import {
   BookmarkIcon,
   ChatBubbleBottomCenterIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   GlobeAltIcon,
   LinkIcon,
   LockClosedIcon,
-  ShareIcon,
+  PencilIcon,
+  TrashIcon,
+  FlagIcon,
+  // ShareIcon,
 } from "@heroicons/react/24/outline";
-import { BookmarkIcon as BookmarkIconSolid } from "@heroicons/react/24/solid";
+import { BookmarkIcon as BookmarkIconSolid, SparklesIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks";
 import { UserHoverCard } from "../user";
+import { CreateImageFromCommentsModal } from "../comment/CreateImageFromCommentsModal";
 
 interface PostCardProps {
   post: PostListItemResponse;
@@ -41,6 +45,11 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const hoverTimeoutRef = useRef<number | null>(null);
+
+  const [showCreateImageModal, setShowCreateImageModal] = useState(false);
+  const [showMenu, setShowMenu] = useState<boolean>(false);
+  const menuTimeoutRef = useRef<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync currentPost with post prop when it changes
   useEffect(() => {
@@ -106,8 +115,28 @@ export const PostCard: React.FC<PostCardProps> = ({
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
       }
+      if (menuTimeoutRef.current) {
+        clearTimeout(menuTimeoutRef.current);
+      }
     };
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
 
   const formattedDate = formatDateTime(post.createdAt);
 
@@ -136,11 +165,11 @@ export const PostCard: React.FC<PostCardProps> = ({
     try {
       // Optimistic update
       setCurrentPost((prev) => {
-        const newLikesCount = wasLiked && !willBeLiked 
+        const newLikesCount = wasLiked && !willBeLiked
           ? Math.max(0, (prev.likesCount || 0) - 1)
           : !wasLiked && willBeLiked
-          ? (prev.likesCount || 0) + 1
-          : prev.likesCount || 0;
+            ? (prev.likesCount || 0) + 1
+            : prev.likesCount || 0;
 
         return {
           ...prev,
@@ -190,12 +219,30 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const handleEditPost = () => {
+    // TODO: Navigate to edit page
+    showToast(ToastType.INFO, "Edit post functionality coming soon");
+    setShowMenu(false);
+  };
+
+  const handleDeletePost = () => {
+    // TODO: Implement delete post
+    showToast(ToastType.INFO, "Delete post functionality coming soon");
+    setShowMenu(false);
+  };
+
+  const handleReportPost = () => {
+    // TODO: Implement report post
+    showToast(ToastType.INFO, "Report post functionality coming soon");
+    setShowMenu(false);
+  };
+
   return (
     <div
-      className={`bg-white rounded-3xl shadow-sm
+      className={`bg-white rounded-3xl
                 w-full max-w-full h-full
                 mx-auto px-4 sm:px-0
-                ${isViewDetail ? "" : "sm:max-w-md md:max-w-lg lg:max-w-3xl"}`}
+                ${isViewDetail ? "" : "shadow-sm sm:max-w-md md:max-w-lg lg:max-w-3xl"}`}
       data-post-id={currentPost.id}
     >
       {/* Header */}
@@ -206,7 +253,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             src={currentPost.user.profilePicture}
             alt={currentPost.user.username}
             className="w-12 h-12 rounded-full object-cover cursor-pointer"
-            onClick={() => {navigate(`/${currentPost.user.username}`)}}
+            onClick={() => { navigate(`/${currentPost.user.username}`) }}
             onMouseEnter={() => {
               if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
@@ -250,7 +297,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               <UserHoverCard
                 user={currentPost.user}
                 isOwnProfile={isPostAuthor}
-                onFollow={() => {}}
+                onFollow={() => { }}
                 onUserUpdate={(updates) => {
                   setCurrentPost((prev: PostListItemResponse) => ({ ...prev, user: updates as UserPostResponse }));
                 }}
@@ -261,8 +308,84 @@ export const PostCard: React.FC<PostCardProps> = ({
 
         {/* Header Right */}
         <div className="flex items-center justify-between">
-          <div className="ml-3">
-            <EllipsisVerticalIcon className="w-6 h-6" />
+          {currentPost.imageUrls && currentPost.imageUrls.length > 0 && (
+            <Button
+              variant="primary"
+              size="medium"
+              onClick={() => setShowCreateImageModal(true)}
+              className="text-sm bg-[#15B8A6]/10 text-[#15B8A6] font-bold hover:bg-[#15B8A6]/15 hover:animate-pulse"
+              title="Create image from comments"
+              leftIcon={SparklesIcon}
+            >
+              AI Edit
+            </Button>
+          )}
+          <div className="ml-3 relative" ref={menuRef}>
+            <div
+              className="cursor-pointer p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              onMouseEnter={() => {
+                if (menuTimeoutRef.current) {
+                  clearTimeout(menuTimeoutRef.current);
+                  menuTimeoutRef.current = null;
+                }
+                setShowMenu(true);
+              }}
+              onMouseLeave={() => {
+                menuTimeoutRef.current = window.setTimeout(() => {
+                  setShowMenu(false);
+                  menuTimeoutRef.current = null;
+                }, 150);
+              }}
+            >
+              <EllipsisHorizontalIcon className="w-6 h-6 text-gray-600" />
+            </div>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div
+                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+                onMouseEnter={() => {
+                  if (menuTimeoutRef.current) {
+                    clearTimeout(menuTimeoutRef.current);
+                    menuTimeoutRef.current = null;
+                  }
+                  setShowMenu(true);
+                }}
+                onMouseLeave={() => {
+                  menuTimeoutRef.current = window.setTimeout(() => {
+                    setShowMenu(false);
+                    menuTimeoutRef.current = null;
+                  }, 150);
+                }}
+              >
+                {isPostAuthor ? (
+                  <>
+                    <button
+                      onClick={handleEditPost}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors"
+                    >
+                      <PencilIcon className="w-5 h-5 text-gray-600" />
+                      <span>Edit post</span>
+                    </button>
+                    <button
+                      onClick={handleDeletePost}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                    >
+                      <TrashIcon className="w-5 h-5 text-red-600" />
+                      <span>Delete post</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleReportPost}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                  >
+                    <FlagIcon className="w-5 h-5 text-red-600" />
+                    <span>Report post</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -316,18 +439,18 @@ export const PostCard: React.FC<PostCardProps> = ({
             <ChatBubbleBottomCenterIcon className="w-6 h-6 text-gray-600" />
             <span className="text-gray-600">{currentPost.commentsCount}</span>
           </div>
-          <div className="flex gap-1 items-center">
+          {/* <div className="flex gap-1 items-center">
             <ShareIcon className="w-6 h-6 text-gray-600" />
             <span className="text-gray-600">{currentPost.sharesCount}</span>
-          </div>
+          </div> */}
+
         </div>
 
         {/* Right foooter */}
         {!isPostAuthor && (
           <div
-            className={`cursor-pointer ${
-              isSaving ? "opacity-50 pointer-events-none" : ""
-            }`}
+            className={`cursor-pointer ${isSaving ? "opacity-50 pointer-events-none" : ""
+              }`}
             onClick={() => handleSavePost(currentPost.id)}
           >
             {currentPost.isSaved ? (
@@ -338,6 +461,16 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Create Image from Comments Modal */}
+      {currentPost.imageUrls && currentPost.imageUrls.length > 0 && (
+        <CreateImageFromCommentsModal
+          isOpen={showCreateImageModal}
+          onClose={() => setShowCreateImageModal(false)}
+          postId={currentPost.id}
+          imageUrls={currentPost.imageUrls}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CommentSection } from "../../components/Comment";
+import { CommentSection } from "../comment";
 import { postService, type PostResponse } from "../../services";
 import { showToast } from "../../utils";
 import { Loading, ToastType } from "../../components";
