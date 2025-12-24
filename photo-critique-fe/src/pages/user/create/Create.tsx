@@ -8,32 +8,13 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { Button, FileUpload, TagInput, PreviewModal, type FileUploadItemData } from "../../../components";
+import { Button, FileUpload, PreviewModal, type FileUploadItemData } from "../../../components";
 import { postService } from "../../../services/postService";
 import { moderationService } from "../../../services/moderationService";
 import { PrivacyType } from "../../../types/enums";
 import { showToast } from "../../../utils";
 import { ToastType } from "../../../components";
 import type { ImageInfo } from "../../../services/types";
-
-// Mock tag suggestions
-const TAG_SUGGESTIONS = [
-  "landscape",
-  "sunset",
-  "nature",
-  "photography",
-  "travel",
-  "portrait",
-  "urban",
-  "architecture",
-  "street",
-  "wildlife",
-  "macro",
-  "blackandwhite",
-  "colorful",
-  "abstract",
-  "minimalist",
-];
 
 export const Create = () => {
   const navigate = useNavigate();
@@ -59,7 +40,7 @@ export const Create = () => {
   }
 
   const [caption, setCaption] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  // const [tags, setTags] = useState<string[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyType>(PrivacyType.PUBLIC);
   const [files, setFiles] = useState<FileUploadItemData[]>(fileItem ? [fileItem] : []);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,7 +69,7 @@ export const Create = () => {
 
         // Populate form with draft data
         setCaption(post.caption || "");
-        setTags(post.tags || []);
+        // setTags(post.tags || []);
         setPrivacy(post.privacy);
 
         // Convert imageUrls to FileUploadItemData format
@@ -195,7 +176,7 @@ export const Create = () => {
             imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
             caption: caption.trim() || undefined,
             privacy,
-            tags: tags.length > 0 ? tags : undefined,
+            // tags: tags.length > 0 ? tags : undefined,
             status: "DRAFTED",
           });
           showToast(ToastType.SUCCESS, response.message || "Draft updated successfully!");
@@ -205,7 +186,7 @@ export const Create = () => {
             imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
             caption: caption.trim() || undefined,
             privacy,
-            tags: tags.length > 0 ? tags : undefined,
+            // tags: tags.length > 0 ? tags : undefined,
             status: "DRAFTED",
           });
           showToast(ToastType.SUCCESS, response.message || "Draft saved successfully!");
@@ -225,7 +206,7 @@ export const Create = () => {
           imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
           caption: caption.trim() || undefined,
           privacy,
-          tags: tags.length > 0 ? tags : undefined,
+          // tags: tags.length > 0 ? tags : undefined,
           status: "POSTED",
         });
         showToast(ToastType.SUCCESS, response.message || "Post published successfully!");
@@ -236,7 +217,7 @@ export const Create = () => {
           imageUrls: imageInfos.length > 0 ? imageInfos : undefined,
           caption: caption.trim() || undefined,
           privacy,
-          tags: tags.length > 0 ? tags : undefined,
+          // tags: tags.length > 0 ? tags : undefined,
           status: "POSTED",
         });
         showToast(ToastType.SUCCESS, response.message || "Post created successfully!");
