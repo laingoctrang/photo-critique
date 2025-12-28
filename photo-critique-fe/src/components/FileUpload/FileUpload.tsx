@@ -3,6 +3,9 @@ import {
   ArrowUpTrayIcon,
   CloudArrowUpIcon,
   PhotoIcon,
+  ArrowPathIcon,
+  XMarkIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "../common/Button";
 import { FileUploadItem, type FileUploadItemData } from "./FileUploadItem";
@@ -16,6 +19,136 @@ import { ToastType } from "../Toast";
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+// Thumbnail component for default variant
+interface ThumbnailItemProps {
+  item: FileUploadItemData;
+  index: number;
+  onDelete: (id: string) => void;
+  onPreview?: (item: FileUploadItemData) => void;
+  formatFileSize: (bytes: number) => string;
+  getFileName: (item: FileUploadItemData) => string;
+  getFileSize: (item: FileUploadItemData) => number;
+  isDragging: boolean;
+  dragOverIndex: number | null;
+  onDragStart: (index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, index: number) => void;
+  onDragEnd: () => void;
+}
+
+const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
+  item,
+  index,
+  onDelete,
+  onPreview,
+  formatFileSize,
+  getFileName,
+  getFileSize,
+  isDragging,
+  dragOverIndex,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+}) => {
+  const fileName = getFileName(item);
+  const fileSize = getFileSize(item);
+  const isUploading = item.status === "uploading";
+  
+  // Use imageInfo.url if available, otherwise create object URL for file
+  const previewUrl = React.useMemo(() => {
+    if (item.imageInfo?.url) return item.imageInfo.url;
+    if (item.file) {
+      return URL.createObjectURL(item.file);
+    }
+    return "";
+  }, [item.imageInfo?.url, item.file]);
+
+  // Cleanup object URL on unmount
+  React.useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  return (
+    <div
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, index)}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "transition-all",
+        isDragging && "opacity-50",
+        dragOverIndex === index && "border-t-4 border-[#15B8A6]"
+      )}
+    >
+      <div 
+        className="w-full -h-full aspect-square rounded-2xl border border-gray-200 bg-white overflow-hidden relative group cursor-pointer"
+        onClick={() => {
+          if (!isUploading && onPreview && item.status === "completed") {
+            onPreview(item);
+          }
+        }}
+      >
+        {/* Image Preview */}
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={fileName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <PhotoIcon className="w-12 h-12 text-gray-400" />
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
+            <ArrowPathIcon className="w-10 h-10 text-white animate-spin mb-2" />
+            <span className="text-sm text-white font-medium">
+              {item.progress}%
+            </span>
+          </div>
+        )}
+
+        {/* Delete Button */}
+        {!isUploading && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(item.id);
+            }}
+            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Delete"
+          >
+            <XMarkIcon className="w-4 h-4 text-gray-600" />
+          </button>
+        )}
+      </div>
+
+      {/* Filename */}
+      <div className="mt-2 text-sm text-gray-700 font-medium truncate max-w-[128px]">
+        {fileName}
+      </div>
+
+      {/* File Size */}
+      <div className="text-xs text-gray-500">
+        {formatFileSize(fileSize)}
+      </div>
+    </div>
+  );
+};
 
 interface FileUploadProps {
   files: FileUploadItemData[];
@@ -390,6 +523,99 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         );
     }
   };
+
+  // Render default variant with new layout when files are uploaded
+  if (variant === "default" && files.length > 0) {
+    const formatFileSize = (bytes: number): string => {
+      if (bytes === 0) return "0 Bytes";
+      const k = 1024;
+      const sizes = ["Bytes", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+    };
+
+    const getFileName = (item: FileUploadItemData): string => {
+      if (item.imageInfo?.name) return item.imageInfo.name;
+      if (item.file?.name) return item.file.name;
+      return item.title || "Untitled";
+    };
+
+    const getFileSize = (item: FileUploadItemData): number => {
+      return item.imageInfo?.size || item.file?.size || 0;
+    };
+
+    return (
+      <div className="bg-white rounded-3xl space-y-4">
+        {/* Uploaded Photos Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-medium text-gray-700">Uploaded Photos</h3>
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#15B8A6] text-white text-xs font-medium">
+              {files.length}
+            </div>
+          </div>  
+        </div>
+
+        {/* Photo Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {files.map((item, index) => (
+            <ThumbnailItem
+              key={item.id}
+              item={item}
+              index={index}
+              onDelete={handleDelete}
+              onPreview={onPreview}
+              formatFileSize={formatFileSize}
+              getFileName={getFileName}
+              getFileSize={getFileSize}
+              isDragging={draggedIndex === index}
+              dragOverIndex={dragOverIndex}
+              onDragStart={handleItemDragStart}
+              onDragOver={handleItemDragOver}
+              onDragLeave={handleItemDragLeave}
+              onDrop={handleItemDrop}
+              onDragEnd={handleItemDragEnd}
+            />
+          ))}
+
+          {/* Add Photos Placeholder */}
+          {files.length < maxFiles && (
+            <div
+              className={cn(
+                "rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center gap-2 py-12",
+                isDragging
+                  ? "border-[#15B8A6] bg-[#F0FDFA]"
+                  : "border-[#15B8A6] bg-white hover:border-[#13A595] hover:bg-[#F0FDFA]",
+              )}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={handleBrowseClick}
+              title="Add Photos"
+            >
+              <div className="w-12 h-12 rounded-full flex items-center justify-center">
+                <Button 
+                  variant="ghost" 
+                  size="large" 
+                  leftIcon={(className) => <PlusIcon className={`w-6 h-6 stroke-[2] ${className}`} />}
+                  className="p-3 text-[#15B8A6] bg-[#15B8A6]/20 hover:bg-[#15B8A6]/20"
+                >
+                </Button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={acceptedTypes}
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

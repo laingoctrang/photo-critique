@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { PrivacyType, ReactionType } from "../../types";
-import { Reaction, ContentExpandable, ImageCarousel, ToastType, Button } from "../../components";
+import { PrivacyType, ReactionType, ReportContentType } from "../../types";
+import { Reaction, ContentExpandable, ImageCarousel, ToastType, Button, ReportModal } from "../../components";
 import { showToast, formatDateTime } from "../../utils";
 import { postService, type PostListItemResponse, type UserPostResponse } from "../../services";
 import {
@@ -8,11 +8,12 @@ import {
   ChatBubbleBottomCenterIcon,
   EllipsisHorizontalIcon,
   GlobeAltIcon,
-  LinkIcon,
   LockClosedIcon,
   PencilIcon,
   TrashIcon,
   FlagIcon,
+  ArrowLeftIcon,
+  UsersIcon,
   // ShareIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkIconSolid, SparklesIcon } from "@heroicons/react/24/solid";
@@ -25,12 +26,16 @@ interface PostCardProps {
   post: PostListItemResponse;
   isViewDetail?: boolean;
   onPostClick?: (postId: string) => void;
+  showBackButton?: boolean;
+  onBackButtonClick?: () => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
   post,
   isViewDetail = false,
   onPostClick,
+  showBackButton = false,
+  onBackButtonClick = () => {},
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -47,6 +52,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const hoverTimeoutRef = useRef<number | null>(null);
 
   const [showCreateImageModal, setShowCreateImageModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const menuTimeoutRef = useRef<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -96,7 +102,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         }
 
         setImgRatio(Number(fallbackRatio.toFixed(4)));
-      } catch (err) {
+      } catch {
         setImgRatio(Number((3 / 2).toFixed(4)));
       }
     };
@@ -147,7 +153,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       case PrivacyType.PRIVATE:
         return <LockClosedIcon className="w-4 h-4" title="Private" />;
       case PrivacyType.FOLLOWER_ONLY:
-        return <LinkIcon className="w-4 h-4" title="Follower Only" />;
+        return <UsersIcon className="w-4 h-4" title="Follower Only" />;
       default:
         return "";
     }
@@ -187,7 +193,22 @@ export const PostCard: React.FC<PostCardProps> = ({
       // Revert on error - reload post data
       try {
         const updatedPost = await postService.getPostById(postId);
-        setCurrentPost(updatedPost);
+        // Convert PostResponse to PostListItemResponse format
+        setCurrentPost({
+          id: updatedPost.id,
+          user: updatedPost.user,
+          caption: updatedPost.caption,
+          imageUrls: updatedPost.imageUrls,
+          privacy: updatedPost.privacy,
+          status: updatedPost.status || currentPost.status,
+          likesCount: updatedPost.likesCount,
+          commentsCount: updatedPost.commentsCount,
+          sharesCount: updatedPost.sharesCount,
+          isLiked: updatedPost.isLiked,
+          userReaction: updatedPost.userReaction,
+          isSaved: updatedPost.isSaved,
+          createdAt: updatedPost.createdAt,
+        });
       } catch {
         // If reload fails, just revert to previous state
         setCurrentPost((prev) => ({
@@ -212,8 +233,9 @@ export const PostCard: React.FC<PostCardProps> = ({
       }
       if (result)
         setCurrentPost((prev: PostListItemResponse) => ({ ...prev, isSaved: !prev.isSaved }));
-    } catch (error: any) {
-      showToast(ToastType.ERROR, error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save post";
+      showToast(ToastType.ERROR, message);
     } finally {
       setIsSaving(false);
     }
@@ -232,8 +254,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleReportPost = () => {
-    // TODO: Implement report post
-    showToast(ToastType.INFO, "Report post functionality coming soon");
+    setShowReportModal(true);
     setShowMenu(false);
   };
 
@@ -249,6 +270,17 @@ export const PostCard: React.FC<PostCardProps> = ({
       <div className="flex items-center justify-between p-4">
         {/* Header Left */}
         <div className="relative flex items-center justify-between">
+          {showBackButton && (
+            <Button
+              variant="ghost"
+              size="medium"
+              onClick={onBackButtonClick}
+              className="text-sm text-gray-600 hover:text-gray-800 w-10 h-10 mr-2 ml-[-10px]"
+              title="Back"
+              leftIcon={ArrowLeftIcon}
+            >
+            </Button>
+          )}
           <img
             src={currentPost.user.profilePicture}
             alt={currentPost.user.username}
@@ -313,11 +345,11 @@ export const PostCard: React.FC<PostCardProps> = ({
               variant="primary"
               size="medium"
               onClick={() => setShowCreateImageModal(true)}
-              className="text-sm bg-[#15B8A6]/10 text-[#15B8A6] font-bold hover:bg-[#15B8A6]/15 hover:animate-pulse"
+              className="gap-0 md:gap-2 text-sm bg-[#15B8A6]/10 text-[#15B8A6] font-bold hover:bg-[#15B8A6]/15 hover:animate-pulse"
               title="Create image from comments"
               leftIcon={SparklesIcon}
             >
-              AI Edit
+              <span className="hidden md:block">AI Edit</span>
             </Button>
           )}
           <div className="ml-3 relative" ref={menuRef}>
@@ -392,7 +424,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* Image */}
       {currentPost.imageUrls.length > 0 && imgRatio && (
-        <div className="block px-4">
+        <div className="block px-4 pb-4">
           <div className="w-full" style={{ aspectRatio: imgRatio }}>
             <ImageCarousel
               images={currentPost.imageUrls.map((img) => img.url)}
@@ -471,6 +503,17 @@ export const PostCard: React.FC<PostCardProps> = ({
           imageUrls={currentPost.imageUrls}
         />
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        contentType={ReportContentType.POST}
+        contentId={currentPost.id}
+        onReportSubmitted={() => {
+          // Optionally refresh post data or show confirmation
+        }}
+      />
     </div>
   );
 };

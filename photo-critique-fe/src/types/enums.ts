@@ -89,3 +89,17 @@ export const PostStatus = {
   PENDING: 'PENDING',
 } as const;
 export type PostStatus = typeof PostStatus[keyof typeof PostStatus];
+
+export const ReportStatus = {
+  PENDING: 'PENDING',
+  REVIEWING: 'REVIEWING',
+  RESOLVED: 'RESOLVED',
+  DISMISSED: 'DISMISSED',
+} as const;
+export type ReportStatus = typeof ReportStatus[keyof typeof ReportStatus];
+
+export const ReportContentType = {
+  POST: 'POST',
+  COMMENT: 'COMMENT',
+} as const;
+export type ReportContentType = typeof ReportContentType[keyof typeof ReportContentType];

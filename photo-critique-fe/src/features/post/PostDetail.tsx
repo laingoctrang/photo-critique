@@ -5,7 +5,6 @@ import { postService, type PostResponse } from "../../services";
 import { showToast } from "../../utils";
 import { Loading, ToastType } from "../../components";
 import { PostCard } from "..";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export const PostDetail: React.FC = () => {
   const { postId } = useParams();
@@ -63,33 +62,23 @@ export const PostDetail: React.FC = () => {
     return null;
   }
 
+  function handleBackButtonClick() {
+    // Restore scroll position when going back
+    const savedScroll = sessionStorage.getItem('homeScrollPosition');
+    if (savedScroll) {
+      setTimeout(() => {
+        window.scrollTo(0, parseInt(savedScroll, 10));
+      }, 100);
+    }
+    navigate(-1);
+  }
+
   return (
     <div className="container mx-auto w-full px-6">
-      {/* Close Button */}
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => {
-            // Restore scroll position when going back
-            const savedScroll = sessionStorage.getItem('homeScrollPosition');
-            if (savedScroll) {
-              setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScroll, 10));
-              }, 100);
-            }
-            navigate(-1);
-          }}
-          type="button"
-          aria-label="Close post detail"
-          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white hover:bg-gray-100 border border-gray-200 shadow-sm transition-colors"
-        >
-          <ArrowLeftIcon className="w-6 h-6 text-gray-600" />
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 ">
         {/* Left: Post Display */}
         <div className="flex-shrink-0 lg:col-span-3">
-          <PostCard post={post} isViewDetail={true} />
+          <PostCard post={post} isViewDetail={true} showBackButton={true} onBackButtonClick={handleBackButtonClick} />
         </div>
 
         {/* Right: Comment Section */}

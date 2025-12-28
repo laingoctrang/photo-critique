@@ -211,7 +211,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="px-4 py-2 flex items-center justify-between border-b border-gray-200">
         <h2 className="text-lg font-bold text-gray-900">
           Comments ({commentsCount})
         </h2>
@@ -261,7 +261,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <CommentInput
           postId={postId}
           imageUrls={imageUrls}
-          placeholder="Generate an edit, e.g."
           onCommentCreated={handleCommentCreated}
         />
       </div>
@@ -305,4 +304,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     </div>
   );
 };
+
+
+
+
 

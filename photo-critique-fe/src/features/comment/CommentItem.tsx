@@ -34,6 +34,7 @@ interface CommentItemProps {
   isSelected?: boolean;
   onSelect?: (commentId: string) => void;
   selectedCommentIds?: Set<string>;
+  showReplies?: boolean;
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({
@@ -50,6 +51,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   isSelected = false,
   onSelect,
   selectedCommentIds,
+  showReplies = true,
 }) => {
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -86,19 +88,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
   };
 
-  const findScrollContainer = (element: HTMLElement | null): HTMLElement | null => {
-    if (!element) return null;
-    let current: HTMLElement | null = element;
-    while (current) {
-      const style = window.getComputedStyle(current);
-      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-        return current;
-      }
-      current = current.parentElement;
-    }
-    return null;
-  };
-
   const handleSelect = (e: React.MouseEvent) => {
     // Only handle if not clicking directly on checkbox or its label
     const target = e.target as HTMLElement;
@@ -107,100 +96,18 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
     e.preventDefault();
     e.stopPropagation();
-    
-    // Save scroll position
-    const scrollContainer = findScrollContainer(target);
-    const scrollTop = scrollContainer?.scrollTop ?? 0;
-    
     onSelect?.(comment.id);
-    
-    // Restore scroll position multiple times to ensure it stays
-    const restoreScroll = () => {
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollTop;
-      }
-    };
-    
-    requestAnimationFrame(restoreScroll);
-    setTimeout(restoreScroll, 0);
-    setTimeout(restoreScroll, 10);
-    setTimeout(restoreScroll, 50);
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    
-    // Save scroll position
-    const scrollContainer = findScrollContainer(e.target);
-    const scrollTop = scrollContainer?.scrollTop ?? 0;
-    
     onSelect?.(comment.id);
-    
-    // Blur immediately to prevent scroll
-    setTimeout(() => {
-      e.target.blur();
-    }, 0);
-    
-    // Restore scroll position multiple times to ensure it stays
-    const restoreScroll = () => {
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollTop;
-      }
-    };
-    
-    requestAnimationFrame(restoreScroll);
-    setTimeout(restoreScroll, 0);
-    setTimeout(restoreScroll, 10);
-    setTimeout(restoreScroll, 50);
-  };
-
-  const handleCheckboxFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Prevent scroll when checkbox gets focus
-    e.target.blur();
-  };
-
-  const handleCheckboxMouseDown = (e: React.MouseEvent) => {
-    // Save scroll position before any potential scroll
-    const scrollContainer = findScrollContainer(e.currentTarget as HTMLElement);
-    const scrollTop = scrollContainer?.scrollTop ?? 0;
-    
-    // Restore scroll position multiple times to ensure it stays
-    const restoreScroll = () => {
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollTop;
-      }
-    };
-    
-    requestAnimationFrame(restoreScroll);
-    setTimeout(restoreScroll, 0);
-    setTimeout(restoreScroll, 10);
-    setTimeout(restoreScroll, 50);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!selectable) return;
-    // Save scroll position before any potential scroll
-    const scrollContainer = findScrollContainer(e.currentTarget as HTMLElement);
-    const scrollTop = scrollContainer?.scrollTop ?? 0;
-    
-    // Restore scroll position multiple times to ensure it stays
-    const restoreScroll = () => {
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollTop;
-      }
-    };
-    
-    requestAnimationFrame(restoreScroll);
-    setTimeout(restoreScroll, 0);
-    setTimeout(restoreScroll, 10);
-    setTimeout(restoreScroll, 50);
   };
 
   return (
     <div 
       className={cn("flex gap-3", selectable && "cursor-pointer")}
       onClick={selectable ? handleSelect : undefined}
-      onMouseDown={selectable ? handleMouseDown : undefined}
     >
       {/* Selection checkbox */}
       {selectable && (
@@ -208,8 +115,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <Checkbox
             checked={isSelected}
             onChange={handleCheckboxChange}
-            onFocus={handleCheckboxFocus}
-            onMouseDown={handleCheckboxMouseDown}
             tabIndex={-1}
             className="w-5 h-5 rounded border-gray-300 text-[#15B8A6] focus:ring-[#15B8A6]"
           />
@@ -220,7 +125,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
       <img
         src={comment.user.profilePicture}
         alt={comment.user.username}
-        className="w-10 h-10 rounded-full object-cover shrink-0"
+        className="w-8 h-8 rounded-full object-cover shrink-0"
       />
 
       {/* Content */}
@@ -229,7 +134,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex items-center gap-2">
           <span className="font-semibold text-gray-900">
             {comment.user.fullName}
-          </span>
+          </span> 
           <span className="text-sm text-gray-500">{timeAgo}</span>
           {comment.isHelpful && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
@@ -240,7 +145,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         </div>
 
         {/* Comment Text */}
-        <p className="text-gray-800 mb-1 whitespace-pre-wrap break-words">
+        <p className="text-gray-800 mb-1 whitespace-pre-wrap break-words text-sm">
           {comment.content}
         </p>
 
@@ -346,6 +251,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         )}
 
         {/* Replies */}
+        {showReplies && (
+          <>
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-3">
             {!isExpanded && (
@@ -385,9 +292,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                     Hide replies
                   </button>
                 )}
+                </div>
+              )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>

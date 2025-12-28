@@ -56,7 +56,7 @@ export const EditProfile = () => {
         privacySetting,
       });
       showToast(ToastType.SUCCESS, "Profile updated successfully");
-      navigate(`/user/${username || profile?.username}`);
+      navigate(`/profile`);
     } catch (error: any) {
       showToast(ToastType.ERROR, error?.message || "Failed to update profile");
     } finally {

@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   GlobeAltIcon,
-  LinkIcon,
   LockClosedIcon,
-  EyeIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 import { Button, FileUpload, PreviewModal, type FileUploadItemData } from "../../../components";
 import { postService } from "../../../services/postService";
@@ -40,6 +39,7 @@ export const Create = () => {
   }
 
   const [caption, setCaption] = useState("");
+  const MAX_CAPTION_LENGTH = 5000;
   // const [tags, setTags] = useState<string[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyType>(PrivacyType.PUBLIC);
   const [files, setFiles] = useState<FileUploadItemData[]>(fileItem ? [fileItem] : []);
@@ -75,15 +75,16 @@ export const Create = () => {
         // Convert imageUrls to FileUploadItemData format
         const draftFiles: FileUploadItemData[] = (post.imageUrls || []).map((img, index) => ({
           id: `draft-${index}`,
-          file: null,
-          preview: img.url,
+          file: undefined,
           status: "completed" as const,
+          progress: 100,
           imageInfo: img,
           moderationResult: undefined,
         }));
         setFiles(draftFiles);
-      } catch (error: any) {
-        showToast(ToastType.ERROR, error?.message || "Failed to load draft post");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to load draft post";
+        showToast(ToastType.ERROR, errorMessage);
         navigate("/create");
       } finally {
         setIsLoadingDraft(false);
@@ -223,8 +224,9 @@ export const Create = () => {
         showToast(ToastType.SUCCESS, response.message || "Post created successfully!");
         navigate(`/post/${response.id}`);
       }
-    } catch (error: any) {
-      showToast(ToastType.ERROR, error.message || `Failed to ${editPostId ? "update" : "create"} post`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to ${editPostId ? "update" : "create"} post`;
+      showToast(ToastType.ERROR, errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -235,19 +237,19 @@ export const Create = () => {
       value: PrivacyType.PUBLIC,
       label: "Public",
       icon: GlobeAltIcon,
-      description: "Anyone can see this post",
+      description: "Everyone can see your post.",
     },
     {
       value: PrivacyType.FOLLOWER_ONLY,
-      label: "Follower Only",
-      icon: LinkIcon,
-      description: "Only your followers can see this post",
+      label: "Followers Only",
+      icon: UsersIcon,
+      description: "Only people who follow you can view this.",
     },
     {
       value: PrivacyType.PRIVATE,
       label: "Private",
       icon: LockClosedIcon,
-      description: "Only you can see this post",
+      description: "Only you can see this post.",
     },
   ];
 
@@ -264,88 +266,100 @@ export const Create = () => {
   return (
     <div className="h-full bg-white rounded-3xl shadow-sm flex flex-col">
       <div className="p-6 h-full flex flex-col overflow-hidden">
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 min-h-0">
+        <h1 className="text-2xl font-bold text-gray-800 flex-shrink-0 mb-1">Create Post</h1>
+        <span className="text-sm text-gray-500 mb-4">Upload at least one image to create a post.</span>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 overflow-y-auto hidden-scrollbar lg:overflow-hidden">
           {/* Left Column - File Upload */}
-          <div className="flex flex-col h-full min-h-0 overflow-hidden">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6 flex-shrink-0">Create Post</h1>
-            <div className="flex-1 overflow-y-auto space-y-6 pr-2 hidden-scrollbar">
+          <div className="flex flex-col h-full min-h-0 lg:overflow-hidden">
+            <div className="flex-1 lg:overflow-y-auto space-y-6 hidden-scrollbar">
               <FileUpload
                 files={files}
                 onFilesChange={handleFilesChange}
                 onPreview={handlePreview}
                 onViolationClick={() => setShowViolationModal(true)}
                 maxFiles={10}
-                acceptedTypes="image/*"
+                acceptedTypes="image/png, image/jpeg"
                 maxSize={10 * 1024 * 1024} // 10MB
-                className="w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
+                className="lg:h-[calc(100vh-222px)] w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
               />
             </div>
           </div>
 
           {/* Right Column - Post Details */}
-          <div className="flex flex-col h-full min-h-0 overflow-hidden">
-            <div className="flex-1 overflow-y-auto space-y-6 px-1">
-            {/* Caption */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Caption
-              </label>
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Tell us more about your photo..."
-                rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#15B8A6] focus:border-transparent resize-none"
-              />
-            </div>
+          <div className="flex flex-col h-full min-h-0 lg:overflow-hidden">
+            <div className="flex-1 lg:overflow-y-auto lg:space-y-6 px-1">
+              {/* Caption */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Caption
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {caption.length}/{MAX_CAPTION_LENGTH}
+                  </span>
+                </div>
+                <div className="relative border border-gray-300 rounded-2xl focus:outline-none focus:border-[#15B8A6]/60 focus:ring-2 focus:ring-[#15B8A6]/50 px-4 py-2">
+                  <textarea
+                    value={caption}
+                    onChange={(e) => {
+                      if (e.target.value.length <= MAX_CAPTION_LENGTH) {
+                        setCaption(e.target.value);
+                      }
+                    }}
+                    placeholder="Write a captivating caption..."
+                    rows={6}
+                    className="w-full border-none focus:outline-none resize-none"
+                  />
+                </div>
+              </div>
 
-            {/* Tags */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags
-              </label>
-              <TagInput
-                tags={tags}
-                onTagsChange={setTags}
-                suggestions={TAG_SUGGESTIONS}
-                placeholder="Add a tag..."
-                maxTags={10}
-              />
-            </div> */}
-
-            {/* Privacy */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Privacy
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {privacyOptions.map((option) => {
-                  const Icon = option.icon;
-                  const isSelected = privacy === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setPrivacy(option.value)}
-                      className={`
-                        flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
-                        ${isSelected
-                          ? "border-[#15B8A6] bg-[#F0FDFA] text-[#15B8A6]"
-                          : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                        }
-                      `}
-                    >
-                      <Icon className="w-6 h-6" />
-                      <span className="text-sm font-medium">{option.label}</span>
-                    </button>
-                  );
-                })}
+              {/* Privacy Settings */}
+              <div className="lg:border-t border-gray-200 py-4">
+                <label className="block text-sm font-medium text-gray-700 mb-4">
+                  Privacy Settings
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {privacyOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isSelected = privacy === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setPrivacy(option.value)}
+                        className={`
+                          w-full flex items-start gap-3 p-4 rounded-2xl border-2 transition-all text-left
+                          ${isSelected
+                            ? "border-[#15B8A6]/60 bg-[#F0FDFA]"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                          }
+                        `}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon className={`
+                              w-5 h-5
+                              ${isSelected ? "text-[#15B8A6]" : "text-gray-600"}
+                            `} />
+                            <span className={`
+                              text-sm font-medium
+                              ${isSelected ? "text-[#15B8A6]" : "text-gray-700"}
+                            `}>
+                              {option.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {option.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            </div>
-            
             {/* Action Buttons - Fixed at bottom */}
             <div className="flex gap-3 mt-auto flex-shrink-0 border-t border-gray-200 pt-4">
               <Button
@@ -363,7 +377,7 @@ export const Create = () => {
                 disabled={
                   isSubmitting ||
                   isSavingDraft ||
-                  (files.length === 0 && !caption.trim()) ||
+                  files.length === 0 ||
                   files.some(
                     (f) =>
                       f.status === "completed" &&
@@ -374,9 +388,8 @@ export const Create = () => {
                 }
                 isLoading={isSubmitting}
                 fullWidth
-                leftIcon={EyeIcon}
               >
-                Publish
+                Publish Post
               </Button>
             </div>
           </div>

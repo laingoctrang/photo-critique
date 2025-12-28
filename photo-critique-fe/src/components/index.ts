@@ -5,4 +5,5 @@ export * from './TagInput';
 export * from './PreviewModal';
 export * from './Reaction';
 export * from './Toast';
+export * from './ReportModal';
 export { Loading } from './Loading';

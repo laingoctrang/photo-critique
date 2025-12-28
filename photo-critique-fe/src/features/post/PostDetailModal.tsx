@@ -16,6 +16,12 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
   const [isLoading, setIsLoading] = useState(false);
   const [commentsCount, setCommentsCount] = useState(0);
 
+  // Save scroll position before navigating to detail
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    sessionStorage.setItem('homeScrollPosition', scrollY.toString());
+  }, []);
+
   useEffect(() => {
     if (!postId) {
       setPost(null);
@@ -50,22 +56,12 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
   if (!postId) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Close Button */}
-      <button
-          onClick={onClose}
-          type="button"
-          aria-label="Close post detail"
-          className="absolute top-4 right-4 z-10 inline-flex items-center justify-center w-10 h-10 transition-colors p-2 hover:bg-gray-100 rounded-full cursor-pointer"
-        >
-          <XMarkIcon className="w-6 h-6 text-white hover:text-gray-600" />
-        </button>
-
-      <div 
-        className="relative w-full max-w-7xl mx-4 my-8 bg-white rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
+      <div
+        className="relative w-full max-w-7xl mx-4 my-8 bg-white rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden lg:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         {isLoading ? (
@@ -73,14 +69,14 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
             <Loading variant="fullscreen" text="Loading post..." />
           </div>
         ) : post ? (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 flex-1 min-h-0 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-5 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
             {/* Left: Post Display */}
-            <div className="flex-shrink-0 lg:col-span-3 overflow-y-auto hidden-scrollbar">
-              <PostCard post={post} isViewDetail={true} />
+            <div className="lg:flex-shrink-0 lg:col-span-3 lg:overflow-y-auto lg:border-r border-gray-200 hidden-scrollbar">
+              <PostCard post={post} isViewDetail={true} showBackButton={true} onBackButtonClick={onClose} />
             </div>
 
             {/* Right: Comment Section */}
-            <div className="flex-shrink-0 min-h-0 lg:col-span-2">
+            <div className="lg:flex-shrink-0 lg:min-h-0 lg:col-span-2">
               <CommentSection
                 postId={post.id}
                 commentsCount={commentsCount}

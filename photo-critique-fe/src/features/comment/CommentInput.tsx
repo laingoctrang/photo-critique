@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { SparklesIcon, PhotoIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
-import { Button, Input, Modal } from "../../components/common";
+import React, { useEffect, useRef, useState } from "react";
+import { SparklesIcon, PhotoIcon, ArrowPathIcon, PaperAirplaneIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { Button, Modal } from "../../components/common";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { type ImageInfo, commentService, type CommentResponse } from "../../services";
@@ -24,13 +24,13 @@ type ModalType = "post-with-image" | null;
 
 export const CommentInput: React.FC<CommentInputProps> = ({
   postId,
-  placeholder = "Generate an edit, e.g.",
+  placeholder = "Enter your comment",
   imageUrls = [],
   disabled = false,
   onCommentCreated,
 }) => {
   const [content, setContent] = useState("");
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,7 +70,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
       // Clear form after successful submission
       setContent("");
-      setSelectedImageIndex(null);
+      setSelectedImageIndex(0);
       setGeneratedImageUrl(null);
 
       // Notify parent component
@@ -146,44 +146,46 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
   const canPost = !!(content.trim() && !isSubmitting && !disabled && !isGenerating);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = "auto";
+
+    const lineHeight = 24;
+    const maxHeight = lineHeight * 5; // 5 lines max  
+
+    // Set height based on content, but cap at maxHeight
+    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${newHeight}px`;
+
+    // Enable scroll if content exceeds max height
+    if (textarea.scrollHeight > maxHeight) {
+      textarea.style.overflowY = "auto";
+    } else {
+      textarea.style.overflowY = "hidden";
+    }
+  }, [content]);
+
   return (
     <>
       <div className="space-y-3">
         {/* Image Selector - Show if there are images available */}
         {availableImages.length > 0 && !generatedImageUrl && (
           <div className="space-y-2">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {/* Option to not select any image */}
-              <button
-                type="button"
-                onClick={() => setSelectedImageIndex(null)}
-                className={cn(
-                  "relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex items-center justify-center bg-gray-50",
-                  selectedImageIndex === null
-                    ? "border-[#15B8A6] ring-2 ring-[#15B8A6]/20"
-                    : "border-gray-200 hover:border-gray-300"
-                )}
-                disabled={disabled}
-              >
-                <span className="text-xs text-gray-500 font-medium">None</span>
-                {selectedImageIndex === null && (
-                  <div className="absolute inset-0 bg-[#15B8A6]/10 flex items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-[#15B8A6] flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">✓</span>
-                    </div>
-                  </div>
-                )}
-              </button>
+            <div className="flex gap-2 overflow-x-auto">
               {availableImages.map((img, index) => (
                 <button
                   key={index}
                   type="button"
-                  onClick={() => setSelectedImageIndex(index)}
+                  onClick={() => setSelectedImageIndex(index === selectedImageIndex ? null : index)}
                   className={cn(
-                    "relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all",
+                    "relative shrink-0 w-20 h-20 lg:w-15 lg:h-15 rounded-xl overflow-hidden border-2 transition-all",
                     index === selectedImageIndex
-                      ? "border-[#15B8A6] ring-2 ring-[#15B8A6]/20"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-[#15B8A6]"
+                      : "border-gray-300 hover:border-[#15B8A6]/50"
                   )}
                   disabled={disabled}
                 >
@@ -195,7 +197,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
                   {index === selectedImageIndex && (
                     <div className="absolute inset-0 bg-[#15B8A6]/10 flex items-center justify-center">
                       <div className="w-6 h-6 rounded-full bg-[#15B8A6] flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">✓</span>
+                        <CheckIcon className="w-4 h-4 text-white stroke-[3]" />
                       </div>
                     </div>
                   )}
@@ -214,37 +216,68 @@ export const CommentInput: React.FC<CommentInputProps> = ({
         )}
 
         {/* Input Form */}
-        <form onSubmit={handlePostClick} className="space-y-3">
-          <div className="w-full">
-            <Input
+        <form onSubmit={handlePostClick}>
+          <div className="flex flex-col w-full border border-gray-300 rounded-2xl p-3 gap-4 items-end">
+            <textarea
+              ref={textareaRef}
+              className="w-full border-none outline-none resize-none placeholder-gray-400 text-gray-800"
+              style={{
+                minHeight: "24px",
+                lineHeight: "24px",
+                maxHeight: "120px", // 5 lines * 24px
+              }}
+              placeholder={placeholder}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder={placeholder}
-              variant="outline"
-              size="medium"
-              fullWidth
+              rows={1}
               disabled={disabled || isSubmitting || isGenerating}
-              className="rounded-2xl"
             />
+
+            {/* Action Buttons - Right aligned */}
+            <div className="flex justify-end gap-2">
+              {/* Generate Button - Always show if images are available */}
+              {imageUrls.length > 0 && (
+                <Button
+                  type="button"
+                  onClick={handleGenerateClick}
+                  disabled={!canGenerate}
+                  isLoading={isGenerating || (isSubmitting && canGenerate)}
+                  leftIcon={SparklesIcon}
+                  className="shrink-0"
+                >
+                  Generate
+                </Button>
+              )}
+
+              {/* Post Button - Always show */}
+              <Button
+                type="submit"
+                disabled={!canPost}
+                isLoading={isSubmitting}
+                className="shrink-0 p-3"
+                leftIcon={PaperAirplaneIcon}
+              >
+              </Button>
+            </div>
           </div>
 
           {/* Generating Progress - Below input, above buttons */}
           {isGenerating && (
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+            <div className="bg-[#15B8A6]/10 border-2 border-[#15B8A6]/30 rounded-2xl p-4 mt-4">
               <div className="flex items-center gap-3">
-                <ArrowPathIcon className="w-6 h-6 text-blue-600 animate-spin" />
+                <ArrowPathIcon className="w-6 h-6 text-[#15B8A6] animate-spin" />
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-900">
+                    <span className="text-sm font-medium text-[#15B8A6]">
                       Generating image...
                     </span>
-                    <span className="text-sm font-bold text-blue-600">
+                    <span className="text-sm font-bold text-[#15B8A6]">
                       {Math.round(generatingProgress)}%
                     </span>
                   </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div className="w-full bg-[#15B8A6]/20 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-[#15B8A6]/80 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${generatingProgress}%` }}
                     />
                   </div>
@@ -254,42 +287,18 @@ export const CommentInput: React.FC<CommentInputProps> = ({
           )}
 
           {/* Generated Image Preview - Below input, above buttons */}
+
           {generatedImageUrl && !isGenerating && (
-            <CommentImage
-              aiGeneratedImage={generatedImageUrl}
-              originalImage={selectedImage?.url || undefined}
-              canDelete={true}
-              onDelete={() => setGeneratedImageUrl(null)}
-              className="max-w-sm max-h-auto"
-            />
+            <div className="mt-2">
+              <CommentImage
+                aiGeneratedImage={generatedImageUrl}
+                originalImage={selectedImage?.url || undefined}
+                canDelete={true}
+                onDelete={() => setGeneratedImageUrl(null)}
+                className="max-w-sm max-h-auto"
+              />
+            </div>
           )}
-
-          {/* Action Buttons - Right aligned */}
-          <div className="flex justify-end gap-2">
-            {/* Generate Button - Always show if images are available */}
-            {imageUrls.length > 0 && (
-              <Button
-                type="button"
-                onClick={handleGenerateClick}
-                disabled={!canGenerate}
-                isLoading={isGenerating || (isSubmitting && canGenerate)}
-                leftIcon={SparklesIcon}
-                className="shrink-0"
-              >
-                Generate
-              </Button>
-            )}
-
-            {/* Post Button - Always show */}
-            <Button
-              type="submit"
-              disabled={!canPost}
-              isLoading={isSubmitting}
-              className="shrink-0"
-            >
-              Post
-            </Button>
-          </div>
         </form>
       </div>
 

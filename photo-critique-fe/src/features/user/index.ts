@@ -4,3 +4,4 @@ export { PostsGrid } from './PostsGrid';
 export { AboutSection } from './AboutSection';
 export { UserHoverCard } from './UserHoverCard';
 export { UnfollowModal } from './UnfollowModal';
+export { FollowersFollowingModal } from './FollowersFollowingModal';
