@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Table, type TableColumn } from "../../components/common/Table";
 import { Modal } from "../../components/common/Modal";
 import { Button } from "../../components/common/Button";
-import { Input } from "../../components/common/Input";
 import { formatDateShortMonthTime } from "../../utils/dateUtils";
 import { showToast } from "../../utils";
 import { ToastType } from "../../components";
@@ -311,7 +310,8 @@ export const Report: React.FC = () => {
           ) : null
         }
         confirmText="Close"
-        cancelText={null}
+        cancelText={undefined}
+        showCancel={false}
         onConfirm={() => setIsDetailModalOpen(false)}
         variant="default"
       />
