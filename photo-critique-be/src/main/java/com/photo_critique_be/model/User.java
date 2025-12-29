@@ -59,6 +59,9 @@ public class User {
     @Field("level") 
     private Integer level = 1;
 
+    @Field("xp_to_next_level")
+    private Integer xpToNextLevel;
+
     @Field("badges")
     private List<BadgeEarned> badges = new ArrayList<>();
 

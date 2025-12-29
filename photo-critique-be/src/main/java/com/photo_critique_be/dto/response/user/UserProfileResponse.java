@@ -25,6 +25,7 @@ public class UserProfileResponse {
     private String privacySetting;
     private Integer xpPoints;
     private Integer level;
+    private Integer xpToNextLevel;
     private List<BadgeEarnedResponse> badges;
     private Integer followersCount;
     private Integer followingCount;

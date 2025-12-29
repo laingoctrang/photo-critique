@@ -74,6 +74,13 @@ public enum MessageCode {
     USER_FOLLOWERS_RETRIEVED("user.followers.retrieved"),
     USER_FOLLOWING_RETRIEVED("user.following.retrieved"),
     USER_FOLLOW_REQUESTS_RETRIEVED("user.follow.requests.retrieved"),
+    USER_LIST_RETRIEVED("user.list.retrieved"),
+    USER_RETRIEVED("user.retrieved"),
+    USER_ENABLED("user.enabled"),
+    USER_DISABLED("user.disabled"),
+    USER_ROLE_UPDATED("user.role.updated"),
+    USER_DELETED("user.deleted"),
+    USER_CANNOT_MODIFY_SELF("user.cannot.modify.self"),
 
     // FILE
     FILE_UPLOAD_SUCCESS("file.upload.success"),

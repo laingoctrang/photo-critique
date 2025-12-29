@@ -478,134 +478,134 @@ public class UserServiceImpl implements UserService {
 
     // Admin methods
 
-    @Override
-    public Page<AdminUserResponse> getAllUsersForAdmin(String search, Boolean enabled, Role role, Pageable pageable) {
-        List<User> allUsers = userRepository.findAll();
-        
-        // Apply filters
-        List<User> filteredUsers = allUsers.stream()
-                .filter(user -> {
-                    // Search filter
-                    if (search != null && !search.trim().isEmpty()) {
-                        String searchLower = search.toLowerCase();
-                        boolean matchesSearch = (user.getUsername() != null && user.getUsername().toLowerCase().contains(searchLower)) ||
-                                (user.getEmail() != null && user.getEmail().toLowerCase().contains(searchLower)) ||
-                                (user.getFullName() != null && user.getFullName().toLowerCase().contains(searchLower));
-                        if (!matchesSearch) return false;
-                    }
-                    
-                    // Enabled filter
-                    if (enabled != null && user.isEnabled() != enabled) {
-                        return false;
-                    }
-                    
-                    // Role filter
-                    if (role != null && (user.getRoles() == null || !user.getRoles().contains(role))) {
-                        return false;
-                    }
-                    
-                    return true;
-                })
-                .collect(Collectors.toList());
-        
-        // Apply pagination manually
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), filteredUsers.size());
-        List<User> pagedUsers = start < filteredUsers.size() ? filteredUsers.subList(start, end) : List.of();
-        
-        // Convert to AdminUserResponse
-        List<AdminUserResponse> responses = pagedUsers.stream()
-                .map(this::toAdminUserResponse)
-                .collect(Collectors.toList());
-        
-        return new PageImpl<>(responses, pageable, filteredUsers.size());
-    }
-
-    @Override
-    public AdminUserResponse getAdminUserById(String userId) {
-        User user = getUserById(userId);
-        return toAdminUserResponse(user);
-    }
-
-    @Override
-    @Transactional
-    public void enableUser(String userId) {
-        String currentUserId = SecurityUtil.getCurrentUserId();
-        if (userId.equals(currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
-        }
-        
-        User user = getUserById(userId);
-        user.setEnabled(true);
-        userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void disableUser(String userId) {
-        String currentUserId = SecurityUtil.getCurrentUserId();
-        if (userId.equals(currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
-        }
-        
-        User user = getUserById(userId);
-        user.setEnabled(false);
-        userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void changeUserRole(String userId, String role) {
-        String currentUserId = SecurityUtil.getCurrentUserId();
-        if (userId.equals(currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
-        }
-        
-        User user = getUserById(userId);
-        try {
-            Role newRole = Role.valueOf(role.toUpperCase());
-            user.setRoles(List.of(newRole));
-            userRepository.save(user);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid role: " + role);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void deleteUser(String userId) {
-        String currentUserId = SecurityUtil.getCurrentUserId();
-        if (userId.equals(currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
-        }
-        
-        User user = getUserById(userId);
-        userRepository.delete(user);
-    }
-
-    private AdminUserResponse toAdminUserResponse(User user) {
-        List<String> roleStrings = user.getRoles() != null 
-                ? user.getRoles().stream().map(r -> r.name()).collect(Collectors.toList())
-                : List.of();
-        
-        return AdminUserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .profilePicture(user.getProfilePicture())
-                .roles(roleStrings)
-                .enabled(user.isEnabled())
-                .xpPoints(user.getXpPoints() != null ? user.getXpPoints() : 0)
-                .level(user.getLevel() != null ? user.getLevel() : 1)
-                .followersCount(user.getFollowersCount() != null ? user.getFollowersCount() : 0)
-                .followingCount(user.getFollowingCount() != null ? user.getFollowingCount() : 0)
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .lastSeen(user.getLastSeen())
-                .isOnline(user.getIsOnline())
-                .build();
-    }
+//    @Override
+//    public Page<AdminUserResponse> getAllUsersForAdmin(String search, Boolean enabled, Role role, Pageable pageable) {
+//        List<User> allUsers = userRepository.findAll();
+//
+//        // Apply filters
+//        List<User> filteredUsers = allUsers.stream()
+//                .filter(user -> {
+//                    // Search filter
+//                    if (search != null && !search.trim().isEmpty()) {
+//                        String searchLower = search.toLowerCase();
+//                        boolean matchesSearch = (user.getUsername() != null && user.getUsername().toLowerCase().contains(searchLower)) ||
+//                                (user.getEmail() != null && user.getEmail().toLowerCase().contains(searchLower)) ||
+//                                (user.getFullName() != null && user.getFullName().toLowerCase().contains(searchLower));
+//                        if (!matchesSearch) return false;
+//                    }
+//
+//                    // Enabled filter
+//                    if (enabled != null && user.isEnabled() != enabled) {
+//                        return false;
+//                    }
+//
+//                    // Role filter
+//                    if (role != null && (user.getRoles() == null || !user.getRoles().contains(role))) {
+//                        return false;
+//                    }
+//
+//                    return true;
+//                })
+//                .collect(Collectors.toList());
+//
+//        // Apply pagination manually
+//        int start = (int) pageable.getOffset();
+//        int end = Math.min(start + pageable.getPageSize(), filteredUsers.size());
+//        List<User> pagedUsers = start < filteredUsers.size() ? filteredUsers.subList(start, end) : List.of();
+//
+//        // Convert to AdminUserResponse
+//        List<AdminUserResponse> responses = pagedUsers.stream()
+//                .map(this::toAdminUserResponse)
+//                .collect(Collectors.toList());
+//
+//        return new PageImpl<>(responses, pageable, filteredUsers.size());
+//    }
+//
+//    @Override
+//    public AdminUserResponse getAdminUserById(String userId) {
+//        User user = getUserById(userId);
+//        return toAdminUserResponse(user);
+//    }
+//
+//    @Override
+//    @Transactional
+//    public void enableUser(String userId) {
+//        String currentUserId = SecurityUtil.getCurrentUserId();
+//        if (userId.equals(currentUserId)) {
+//            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+//        }
+//
+//        User user = getUserById(userId);
+//        user.setEnabled(true);
+//        userRepository.save(user);
+//    }
+//
+//    @Override
+//    @Transactional
+//    public void disableUser(String userId) {
+//        String currentUserId = SecurityUtil.getCurrentUserId();
+//        if (userId.equals(currentUserId)) {
+//            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+//        }
+//
+//        User user = getUserById(userId);
+//        user.setEnabled(false);
+//        userRepository.save(user);
+//    }
+//
+//    @Override
+//    @Transactional
+//    public void changeUserRole(String userId, String role) {
+//        String currentUserId = SecurityUtil.getCurrentUserId();
+//        if (userId.equals(currentUserId)) {
+//            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+//        }
+//
+//        User user = getUserById(userId);
+//        try {
+//            Role newRole = Role.valueOf(role.toUpperCase());
+//            user.setRoles(List.of(newRole));
+//            userRepository.save(user);
+//        } catch (IllegalArgumentException e) {
+//            throw new IllegalArgumentException("Invalid role: " + role);
+//        }
+//    }
+//
+//    @Override
+//    @Transactional
+//    public void deleteUser(String userId) {
+//        String currentUserId = SecurityUtil.getCurrentUserId();
+//        if (userId.equals(currentUserId)) {
+//            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+//        }
+//
+//        User user = getUserById(userId);
+//        userRepository.delete(user);
+//    }
+//
+//    private AdminUserResponse toAdminUserResponse(User user) {
+//        List<String> roleStrings = user.getRoles() != null
+//                ? user.getRoles().stream().map(r -> r.name()).collect(Collectors.toList())
+//                : List.of();
+//
+//        return AdminUserResponse.builder()
+//                .id(user.getId())
+//                .username(user.getUsername())
+//                .email(user.getEmail())
+//                .fullName(user.getFullName())
+//                .profilePicture(user.getProfilePicture())
+//                .roles(roleStrings)
+//                .enabled(user.isEnabled())
+//                .xpPoints(user.getXpPoints() != null ? user.getXpPoints() : 0)
+//                .level(user.getLevel() != null ? user.getLevel() : 1)
+//                .followersCount(user.getFollowersCount() != null ? user.getFollowersCount() : 0)
+//                .followingCount(user.getFollowingCount() != null ? user.getFollowingCount() : 0)
+//                .createdAt(user.getCreatedAt())
+//                .updatedAt(user.getUpdatedAt())
+//                .lastSeen(user.getLastSeen())
+//                .isOnline(user.getIsOnline())
+//                .build();
+//    }
 
     // Helper methods
 
