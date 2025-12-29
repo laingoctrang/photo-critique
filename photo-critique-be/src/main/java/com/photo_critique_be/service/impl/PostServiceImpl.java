@@ -210,7 +210,7 @@ public class PostServiceImpl implements PostService {
                 .map(post -> buildPostListItemResponse(post, currentUserId))
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(responses, pageable, filteredPosts.size());
+        return new PageImpl<>(responses, pageable, posts.getTotalElements());
     }
 
     @Override

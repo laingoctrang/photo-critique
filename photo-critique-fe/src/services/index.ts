@@ -11,3 +11,4 @@ export { userService, type UserProfileResponse, type BadgeEarnedResponse, type U
 export { imageGenerationHistoryService, type CreateImageGenerationHistoryRequest, type ImageGenerationHistoryResponse } from './imageGenerationHistoryService';
 export { generateService } from './generateService';
 export { uploadService } from './uploadService';
+export { reportService, type ReportResponse, type CreateReportRequest, type ResolveReportRequest, type GetReportsParams, type ReportsPageResponse } from './reportService';

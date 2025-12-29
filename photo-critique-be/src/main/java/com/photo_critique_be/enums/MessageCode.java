@@ -21,6 +21,7 @@ public enum MessageCode {
     AUTH_UNAUTHORIZED("auth.unauthorized"),
     AUTH_OAUTH_URL_GENERATED("auth.oauth.url.generated"),
     AUTH_OAUTH_PROVIDER_MISMATCH("auth.oauth.provider.mismatch"),
+    AUTH_OAUTH_CANCELLED("auth.oauth.cancelled"),
 
     OTP_REGISTER_SEND_SUCCESS("otp.register.send.success"),
     OTP_REGISTER_VERIFY_SUCCESS("otp.register.verify.success"),
@@ -162,7 +163,18 @@ public enum MessageCode {
     IMAGE_GENERATION_HISTORY_CREATED_SUCCESS("image.generation.history.created.success"),
     IMAGE_GENERATION_HISTORY_GET_SUCCESS("image.generation.history.get.success"),
     IMAGE_GENERATION_HISTORY_DELETED_SUCCESS("image.generation.history.deleted.success"),
-    IMAGE_GENERATION_HISTORY_NOT_FOUND("image.generation.history.not.found");
+    IMAGE_GENERATION_HISTORY_NOT_FOUND("image.generation.history.not.found"),
+
+    // REPORT
+    REPORT_CREATED_SUCCESS("report.created.success"),
+    REPORT_GET_SUCCESS("report.get.success"),
+    REPORT_NOT_FOUND("report.not.found"),
+    REPORT_ALREADY_EXISTS("report.already.exists"),
+    REPORT_CANNOT_REPORT_OWN_CONTENT("report.cannot.report.own.content"),
+    REPORT_RESOLVED_SUCCESS("report.resolved.success"),
+    REPORT_DISMISSED_SUCCESS("report.dismissed.success"),
+    REPORT_ALREADY_PROCESSED("report.already.processed"),
+    REPORT_LIST_SUCCESS("report.list.success");
 
     private final String code;
 

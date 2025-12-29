@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CommentSection } from "../comment";
-import { postService, type PostResponse } from "../../services";
+import { postService, type PostResponse, type PostListItemResponse } from "../../services";
+import { PostStatus } from "../../types/enums";
 import { showToast } from "../../utils";
 import { Loading, ToastType } from "../../components";
 import { PostCard } from "..";
@@ -50,6 +51,25 @@ export const PostDetail: React.FC = () => {
     }
   };
 
+  // Convert PostResponse to PostListItemResponse format
+  const convertToPostListItem = (postResponse: PostResponse): PostListItemResponse => {
+    return {
+      id: postResponse.id,
+      user: postResponse.user,
+      caption: postResponse.caption,
+      imageUrls: postResponse.imageUrls,
+      privacy: postResponse.privacy,
+      status: postResponse.status || PostStatus.POSTED,
+      likesCount: postResponse.likesCount,
+      commentsCount: postResponse.commentsCount,
+      sharesCount: postResponse.sharesCount,
+      isLiked: postResponse.isLiked,
+      userReaction: postResponse.userReaction,
+      isSaved: postResponse.isSaved,
+      createdAt: postResponse.createdAt,
+    };
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -78,7 +98,7 @@ export const PostDetail: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 ">
         {/* Left: Post Display */}
         <div className="flex-shrink-0 lg:col-span-3">
-          <PostCard post={post} isViewDetail={true} showBackButton={true} onBackButtonClick={handleBackButtonClick} />
+          <PostCard post={convertToPostListItem(post)} isViewDetail={true} showBackButton={true} onBackButtonClick={handleBackButtonClick} />
         </div>
 
         {/* Right: Comment Section */}

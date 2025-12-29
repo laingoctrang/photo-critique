@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { CommentSection } from "../comment";
-import { postService, type PostResponse } from "../../services";
+import { postService, type PostResponse, type PostListItemResponse } from "../../services";
+import { PostStatus } from "../../types/enums";
 import { showToast } from "../../utils";
 import { Loading, ToastType } from "../../components";
 import { PostCard } from "..";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 
 interface PostDetailModalProps {
   postId: string | null;
@@ -53,6 +53,25 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
     }
   };
 
+  // Convert PostResponse to PostListItemResponse format
+  const convertToPostListItem = (postResponse: PostResponse): PostListItemResponse => {
+    return {
+      id: postResponse.id,
+      user: postResponse.user,
+      caption: postResponse.caption,
+      imageUrls: postResponse.imageUrls,
+      privacy: postResponse.privacy,
+      status: postResponse.status || PostStatus.POSTED,
+      likesCount: postResponse.likesCount,
+      commentsCount: postResponse.commentsCount,
+      sharesCount: postResponse.sharesCount,
+      isLiked: postResponse.isLiked,
+      userReaction: postResponse.userReaction,
+      isSaved: postResponse.isSaved,
+      createdAt: postResponse.createdAt,
+    };
+  };
+
   if (!postId) return null;
 
   return (
@@ -72,7 +91,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ postId, onClos
           <div className="grid grid-cols-1 lg:grid-cols-5 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
             {/* Left: Post Display */}
             <div className="lg:flex-shrink-0 lg:col-span-3 lg:overflow-y-auto lg:border-r border-gray-200 hidden-scrollbar">
-              <PostCard post={post} isViewDetail={true} showBackButton={true} onBackButtonClick={onClose} />
+              <PostCard post={convertToPostListItem(post)} isViewDetail={true} showBackButton={true} onBackButtonClick={onClose} />
             </div>
 
             {/* Right: Comment Section */}
