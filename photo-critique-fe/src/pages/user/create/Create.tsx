@@ -378,12 +378,18 @@ export const Create = () => {
                   isSubmitting ||
                   isSavingDraft ||
                   files.length === 0 ||
+                  files.some((f) => f.status === "uploading") ||
                   files.some(
                     (f) =>
                       f.status === "completed" &&
                       f.imageInfo?.contentType?.startsWith("image/") &&
-                      (!f.moderationResult ||
-                        !f.moderationResult.allowed)
+                      !f.moderationResult
+                  ) ||
+                  files.some(
+                    (f) =>
+                      f.status === "completed" &&
+                      f.moderationResult &&
+                      !f.moderationResult.allowed
                   )
                 }
                 isLoading={isSubmitting}

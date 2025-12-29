@@ -97,11 +97,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", isCollapsed = 
                 <MenuItem key={item.id} item={item} isCollapsed={isCollapsed} />
               ))}
             </ul>
+            <ul className="space-y-1.5">
+              {menuItems.moderator.map((item) => (
+                <MenuItem key={item.id} item={item} isCollapsed={isCollapsed} />
+              ))}
+            </ul>
           </div>
         )}
 
         {/* Moderator Section */}
-        {menuItems.moderator.length > 0 && (
+        {/* {menuItems.moderator.length > 0 && (
           <div>
             {!isCollapsed && (
               <div className="flex items-center mb-3 px-2">
@@ -118,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = "", isCollapsed = 
               ))}
             </ul>
           </div>
-        )}
+        )} */}
       </nav>
 
       {/* Footer */}

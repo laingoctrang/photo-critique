@@ -84,8 +84,8 @@ export const EditProfile = () => {
   const tabs = [
     { id: "account" as TabType, label: "Account" },
     { id: "privacy" as TabType, label: "Privacy & Security" },
-    { id: "notifications" as TabType, label: "Notifications" },
-    { id: "connected" as TabType, label: "Connected Accounts" },
+    // { id: "notifications" as TabType, label: "Notifications" },
+    // { id: "connected" as TabType, label: "Connected Accounts" },
   ];
 
   return (
@@ -269,7 +269,7 @@ export const EditProfile = () => {
           </div>
         </div>
       )}
-
+{/* 
       {activeTab === "notifications" && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-6">Notifications</h2>
@@ -282,7 +282,7 @@ export const EditProfile = () => {
           <h2 className="text-lg font-bold text-gray-900 mb-6">Connected Accounts</h2>
           <p className="text-gray-500">Connected accounts settings coming soon...</p>
         </div>
-      )}
+      )} */}
 
       {/* Save Button */}
       <div className="flex justify-end mt-8">

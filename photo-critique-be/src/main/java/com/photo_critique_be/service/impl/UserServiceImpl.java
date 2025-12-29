@@ -3,12 +3,14 @@ package com.photo_critique_be.service.impl;
 import com.photo_critique_be.dto.FollowInfo;
 import com.photo_critique_be.dto.request.user.UpdateOnlineStatusRequest;
 import com.photo_critique_be.dto.request.user.UpdateProfileRequest;
+import com.photo_critique_be.dto.response.user.AdminUserResponse;
 import com.photo_critique_be.dto.response.user.UserListItemResponse;
 import com.photo_critique_be.dto.response.user.UserPostResponse;
 import com.photo_critique_be.dto.response.user.UserProfileResponse;
 import com.photo_critique_be.enums.FollowStatus;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.enums.PrivacyType;
+import com.photo_critique_be.enums.Role;
 import com.photo_critique_be.exception.AuthorizationException;
 import com.photo_critique_be.exception.ConflictException;
 import com.photo_critique_be.exception.ResourceNotFoundException;
@@ -87,13 +89,36 @@ public class UserServiceImpl implements UserService {
         String currentUserId = SecurityUtil.getCurrentUserId();
         User user = getUserByUsername(username);
 
-        // Check privacy and follow status
-        if (!canViewProfile(user, currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_PROFILE_PRIVATE));
-        }
-
         FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
 
+        // Check privacy and follow status
+        boolean canViewFullProfile = canViewProfile(user, currentUserId);
+        
+        if (!canViewFullProfile) {
+            // Return basic profile information only
+            UserProfileResponse userProfileResponse = UserProfileResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .profilePicture(user.getProfilePicture())
+                    .fullName(user.getFullName())
+                    .bio(null) // Hide bio for private profiles
+                    .isOnline(null)
+                    .lastSeen(null)
+                    .privacySetting(user.getPrivacySetting().name())
+                    .xpPoints(null)
+                    .level(null)
+                    .badges(null) // Hide badges
+                    .followersCount(null)
+                    .followingCount(null)
+                    .createdAt(null)
+                    .isFollowing(followInfo.getIsFollowing())
+                    .isFollowedBy(followInfo.getIsFollowedBy())
+                    .followStatus(followInfo.getFollowStatus())
+                    .build();
+            return userProfileResponse;
+        }
+
+        // Return full profile information
         UserProfileResponse userProfileResponse = userMapper.toUserProfileResponse(user, followInfo);
         if (user.getBadges() != null && !user.getBadges().isEmpty()) {
             userProfileResponse.setBadges(badgeService.getBadgesEarned(user.getBadges()));
@@ -107,13 +132,36 @@ public class UserServiceImpl implements UserService {
         String currentUserId = SecurityUtil.getCurrentUserId();
         User user = getUserById(userId);
 
-        // Check privacy and follow status
-        if (!canViewProfile(user, currentUserId)) {
-            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_PROFILE_PRIVATE));
-        }
-
         FollowInfo followInfo = followService.resolveFollowInfo(user.getId(), currentUserId);
 
+        // Check privacy and follow status
+        boolean canViewFullProfile = canViewProfile(user, currentUserId);
+        
+        if (!canViewFullProfile) {
+            // Return basic profile information only
+            UserProfileResponse userProfileResponse = UserProfileResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .profilePicture(user.getProfilePicture())
+                    .fullName(user.getFullName())
+                    .bio(null) // Hide bio for private profiles
+                    .isOnline(null)
+                    .lastSeen(null)
+                    .privacySetting(user.getPrivacySetting().name())
+                    .xpPoints(null)
+                    .level(null)
+                    .badges(null) // Hide badges
+                    .followersCount(null)
+                    .followingCount(null)
+                    .createdAt(null)
+                    .isFollowing(followInfo.getIsFollowing())
+                    .isFollowedBy(followInfo.getIsFollowedBy())
+                    .followStatus(followInfo.getFollowStatus())
+                    .build();
+            return userProfileResponse;
+        }
+
+        // Return full profile information
         UserProfileResponse userProfileResponse = userMapper.toUserProfileResponse(user, followInfo);
         if (user.getBadges() != null && !user.getBadges().isEmpty()) {
             userProfileResponse.setBadges(badgeService.getBadgesEarned(user.getBadges()));
@@ -178,12 +226,20 @@ public class UserServiceImpl implements UserService {
         }
 
         Follow follow;
+        boolean isNewFollow = false;
+        FollowStatus oldStatus = null;
+        
         if (existingFollow.isPresent()) {
             follow = existingFollow.get();
+            oldStatus = follow.getStatus();
+            
             if (follow.getStatus() == FollowStatus.ACCEPTED) {
                 throw new ConflictException(languageService.getMessage(MessageCode.USER_ALREADY_FOLLOWING));
             } else if (follow.getStatus() == FollowStatus.PENDING) {
-                throw new ConflictException(languageService.getMessage(MessageCode.USER_FOLLOW_REQUEST_PENDING));
+                // Cancel pending request (unfollow)
+                followRepository.delete(follow);
+                // Update follower counts if needed (though for PENDING, counts shouldn't have changed)
+                return; // Exit early after canceling
             } else if (follow.getStatus() == FollowStatus.BLOCKED) {
                 throw new AuthorizationException(languageService.getMessage(MessageCode.USER_BLOCKED));
             } else if (follow.getStatus() == FollowStatus.REJECTED) {
@@ -192,6 +248,7 @@ public class UserServiceImpl implements UserService {
             }
         } else {
             // Create new follow relationship
+            isNewFollow = true;
             follow = new Follow();
             follow.setFollowerId(currentUserId);
             follow.setFollowingId(userId);
@@ -200,11 +257,11 @@ public class UserServiceImpl implements UserService {
 
         // Update follower counts if status is ACCEPTED
         if (status == FollowStatus.ACCEPTED) {
-            // Only update counts if this is a new follow or status changed from REJECTED
-            if (existingFollow.isPresent() && existingFollow.get().getStatus() == FollowStatus.REJECTED) {
-                targetUser.setFollowersCount(targetUser.getFollowersCount() + 1);
+            // Update counts if this is a new follow or status changed from REJECTED
+            if (isNewFollow || (oldStatus != null && oldStatus == FollowStatus.REJECTED)) {
+                targetUser.setFollowersCount((targetUser.getFollowersCount() != null ? targetUser.getFollowersCount() : 0) + 1);
                 User currentUser = userRepository.findById(currentUserId).orElseThrow();
-                currentUser.setFollowingCount(currentUser.getFollowingCount() + 1);
+                currentUser.setFollowingCount((currentUser.getFollowingCount() != null ? currentUser.getFollowingCount() : 0) + 1);
                 userRepository.save(targetUser);
                 userRepository.save(currentUser);
             }
@@ -417,6 +474,137 @@ public class UserServiceImpl implements UserService {
                             return userMapper.toUserPostResponse(user, followInfo);
                         }
                 ));
+    }
+
+    // Admin methods
+
+    @Override
+    public Page<AdminUserResponse> getAllUsersForAdmin(String search, Boolean enabled, Role role, Pageable pageable) {
+        List<User> allUsers = userRepository.findAll();
+        
+        // Apply filters
+        List<User> filteredUsers = allUsers.stream()
+                .filter(user -> {
+                    // Search filter
+                    if (search != null && !search.trim().isEmpty()) {
+                        String searchLower = search.toLowerCase();
+                        boolean matchesSearch = (user.getUsername() != null && user.getUsername().toLowerCase().contains(searchLower)) ||
+                                (user.getEmail() != null && user.getEmail().toLowerCase().contains(searchLower)) ||
+                                (user.getFullName() != null && user.getFullName().toLowerCase().contains(searchLower));
+                        if (!matchesSearch) return false;
+                    }
+                    
+                    // Enabled filter
+                    if (enabled != null && user.isEnabled() != enabled) {
+                        return false;
+                    }
+                    
+                    // Role filter
+                    if (role != null && (user.getRoles() == null || !user.getRoles().contains(role))) {
+                        return false;
+                    }
+                    
+                    return true;
+                })
+                .collect(Collectors.toList());
+        
+        // Apply pagination manually
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filteredUsers.size());
+        List<User> pagedUsers = start < filteredUsers.size() ? filteredUsers.subList(start, end) : List.of();
+        
+        // Convert to AdminUserResponse
+        List<AdminUserResponse> responses = pagedUsers.stream()
+                .map(this::toAdminUserResponse)
+                .collect(Collectors.toList());
+        
+        return new PageImpl<>(responses, pageable, filteredUsers.size());
+    }
+
+    @Override
+    public AdminUserResponse getAdminUserById(String userId) {
+        User user = getUserById(userId);
+        return toAdminUserResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void enableUser(String userId) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        if (userId.equals(currentUserId)) {
+            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+        }
+        
+        User user = getUserById(userId);
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void disableUser(String userId) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        if (userId.equals(currentUserId)) {
+            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+        }
+        
+        User user = getUserById(userId);
+        user.setEnabled(false);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void changeUserRole(String userId, String role) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        if (userId.equals(currentUserId)) {
+            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+        }
+        
+        User user = getUserById(userId);
+        try {
+            Role newRole = Role.valueOf(role.toUpperCase());
+            user.setRoles(List.of(newRole));
+            userRepository.save(user);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid role: " + role);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(String userId) {
+        String currentUserId = SecurityUtil.getCurrentUserId();
+        if (userId.equals(currentUserId)) {
+            throw new AuthorizationException(languageService.getMessage(MessageCode.USER_CANNOT_MODIFY_SELF));
+        }
+        
+        User user = getUserById(userId);
+        userRepository.delete(user);
+    }
+
+    private AdminUserResponse toAdminUserResponse(User user) {
+        List<String> roleStrings = user.getRoles() != null 
+                ? user.getRoles().stream().map(r -> r.name()).collect(Collectors.toList())
+                : List.of();
+        
+        return AdminUserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .profilePicture(user.getProfilePicture())
+                .roles(roleStrings)
+                .enabled(user.isEnabled())
+                .xpPoints(user.getXpPoints() != null ? user.getXpPoints() : 0)
+                .level(user.getLevel() != null ? user.getLevel() : 1)
+                .followersCount(user.getFollowersCount() != null ? user.getFollowersCount() : 0)
+                .followingCount(user.getFollowingCount() != null ? user.getFollowingCount() : 0)
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .lastSeen(user.getLastSeen())
+                .isOnline(user.getIsOnline())
+                .build();
     }
 
     // Helper methods
