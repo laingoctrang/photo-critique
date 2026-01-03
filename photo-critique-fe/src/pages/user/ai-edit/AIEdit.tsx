@@ -12,14 +12,15 @@ import {
   ArrowDownTrayIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
-import { Button, FileUpload, type FileUploadItemData, ImageCarousel, Loading } from "../../../components";
+import { Button, FileUpload, type FileUploadItemData, ImageCarousel } from "../../../components";
 import { showToast } from "../../../utils";
 import { ToastType } from "../../../components";
-import { generateService, imageGenerationHistoryService, type ImageGenerationHistoryResponse, uploadService } from "../../../services";
+import { generateService, imageGenerationHistoryService, type ImageGenerationHistoryResponse, uploadService, moderationService } from "../../../services";
 import { HistoryView } from "./HistoryView";
 
 export const AIEdit = () => {
   const navigate = useNavigate();
+  const MAX_PROMPT_LENGTH = 1000;
 
   const [files, setFiles] = useState<FileUploadItemData[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -31,11 +32,11 @@ export const AIEdit = () => {
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatingProgress, setGeneratingProgress] = useState(0);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const cancelTokenRef = useRef<{ cancelled: boolean } | null>(null);
 
   const [showViolationModal, setShowViolationModal] = useState(false);
+  const [showTextViolationModal, setShowTextViolationModal] = useState(false);
   const [viewMode, setViewMode] = useState<"chat" | "history">("chat");
 
   const [imgRatio, setImgRatio] = useState<number | null>(null);
@@ -199,7 +200,9 @@ export const AIEdit = () => {
   }, [prompt]);
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setPrompt(e.target.value);
+    if (e.target.value.length <= MAX_PROMPT_LENGTH) {
+      setPrompt(e.target.value);
+    }
   };
 
   const handleGenerate = async () => {
@@ -213,6 +216,18 @@ export const AIEdit = () => {
       return;
     }
 
+    // Check text moderation
+    try {
+      const textModeration = await moderationService.moderateText(prompt.trim());
+      if (!textModeration.allowed) {
+        setShowTextViolationModal(true);
+        return;
+      }
+    } catch (error) {
+      console.error("Text moderation check failed:", error);
+      // Continue if moderation check fails
+    }
+
     // Check moderation results - block if any image violates policy
     const violatingFile = files[0]?.moderationResult && !files[0]?.moderationResult?.allowed;
 
@@ -224,15 +239,12 @@ export const AIEdit = () => {
     // Create cancel token
     cancelTokenRef.current = { cancelled: false };
     setIsGenerating(true);
-    setGeneratingProgress(0);
 
     try {
       const result = await generateService.generateImage(
         prompt.trim(),
         originalImage,
-        (progress) => {
-          setGeneratingProgress(progress);
-        },
+        undefined,
         cancelTokenRef.current
       );
 
@@ -249,7 +261,6 @@ export const AIEdit = () => {
       }
     } finally {
       setIsGenerating(false);
-      setGeneratingProgress(0);
       cancelTokenRef.current = null;
     }
   };
@@ -258,7 +269,6 @@ export const AIEdit = () => {
     if (cancelTokenRef.current) {
       cancelTokenRef.current.cancelled = true;
       setIsGenerating(false);
-      setGeneratingProgress(0);
       showToast(ToastType.INFO, "Generation cancelled");
     }
   };
@@ -299,8 +309,8 @@ export const AIEdit = () => {
         <div className="flex-1 overflow-hidden flex flex-col">
           {!isUploaded ? (
             /* Upload Area */
-            <div className="flex-1 flex flex-col overflow-y-auto">
-              <div className="flex justify-between items-start">
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex justify-between items-start flex-shrink-0">
                 <div className="flex flex-col justify-center">
                   <h1 className="text-2xl font-bold text-gray-800 mb-2">Ready to edit?</h1>
                   <p className="text-gray-500 font-light text-sm mb-4">Upload an image to start applying AI enhancements.</p>
@@ -316,11 +326,24 @@ export const AIEdit = () => {
                 </Button>
               </div>
               
-              <div className="flex-1 min-h-0 relative">
+              <div className="flex-1 min-h-0 relative overflow-hidden">
                 {/* Loading Overlay when uploading */}
                 {isFileUploading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white z-50 rounded-3xl border-2 border-dashed border-gray-400">
-                    <Loading variant="text" text="Uploading image..." />
+                    <div className="flex flex-col items-center gap-4">
+                      <ArrowPathIcon className="w-12 h-12 text-[#15B8A6] animate-spin" />
+                      <div className="flex flex-col items-center gap-2">
+                        <p className="text-sm font-medium text-gray-700">
+                         Uploading image to cloudinary...
+                        </p>
+                        <div className="w-64 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-[#15B8A6] h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${currentFile?.progress || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -328,9 +351,9 @@ export const AIEdit = () => {
                   files={files}
                   onFilesChange={handleFilesChange}
                   maxFiles={1}
-                  acceptedTypes="image/jpeg, image/png"
+                  acceptedTypes=".jpg,.jpeg,.png,image/jpeg,image/png"
                   maxSize={10 * 1024 * 1024}
-                  className="h-[calc(100vh-250px)] w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
+                  className="h-[calc(100vh-285px)] w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
                   itemClassName="rounded-3xl opacity-0"
                 />
               </div>
@@ -341,11 +364,11 @@ export const AIEdit = () => {
             /* Image Display Area */
             <div className="flex-1 flex flex-col items-center justify-center relative min-h-0 overflow-hidden">
               {/* Image Container */}
-              <div className="relative w-full h-full flex items-center justify-center" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+              <div className="relative w-full flex items-center justify-center flex-1 overflow-hidden">
 
                 {/* Image with blur when generating */}
                 {displayImage && imgRatio && (
-                  <div className="w-full h-full flex items-center justify-center overflow-hidden" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+                  <div className="w-full h-full flex items-center justify-center overflow-hidden">
                     <div
                       className="w-full h-full flex items-center justify-center"
                       style={{ aspectRatio: imgRatio }}
@@ -367,7 +390,7 @@ export const AIEdit = () => {
                       <div className="relative">
                         <SparklesIcon className="w-15 h-15 text-[#15B8A6] animate-bounce" />
                       </div>
-                      <p className="text-white font-medium animate-pulse">Generating {Math.round(generatingProgress)}%</p>
+                      <p className="text-white font-medium animate-pulse">Generating...</p>
                       <Button
                         variant="secondary"
                         size="small"
@@ -489,7 +512,7 @@ export const AIEdit = () => {
             <div className="flex-shrink-0 mx-1 mb-1 mt-4">
               <div className="flex gap-3">
                 <div className={`
-          flex w-full border border-gray-300 shadow-sm rounded-2xl p-3 gap-4 items-end 
+          flex flex-col w-full border border-gray-300 shadow-sm rounded-2xl p-3 gap-2 relative
           ${isTextareaFocused ? "border-[#15B8A6] ring-2 ring-[#15B8A6]/70" : ""}
           ${isGenerating ? "bg-gray-200/10" : "bg-white hover:bg-gray-50"}`
                 }>
@@ -497,13 +520,14 @@ export const AIEdit = () => {
                     ref={textareaRef}
                     className="w-full border-none outline-none resize-none text-sm placeholder-gray-400 text-gray-800"
                     style={{
-                      minHeight: "24px",
+                      height: "90px",
                       lineHeight: "24px",
-                      maxHeight: "120px", // 5 lines * 24px
+                      overflowY: "auto",
                     }}
-                    placeholder="Describe your edit"
+                    placeholder="Describe what you want to edit...(max 1000 characters)"
                     value={prompt}
                     onChange={handlePromptChange}
+                    maxLength={MAX_PROMPT_LENGTH}
                     onFocus={() => setIsTextareaFocused(true)}
                     onBlur={(e) => {
                       const relatedTarget = e.relatedTarget as HTMLElement;
@@ -512,26 +536,35 @@ export const AIEdit = () => {
                       }
                       setIsTextareaFocused(false);
                     }}
-                    disabled={isGenerating || isFileUploading || hasViolation}
+                    disabled={isGenerating || hasViolation}
                     rows={1}
                   />
-
-                  <Button
-                    variant="ghost"
-                    size="large"
-                    leftIcon={({ className }) => <ArrowUpIcon className={`${className} p-1 bg-[#15B8A6] rounded-full text-white`} />}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleGenerate();
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    disabled={isGenerating || isFileUploading || !prompt.trim() || !isUploaded || hasViolation}
-                    className="rounded-xl p-0 flex-shrink-0 border-none outline-none disabled:opacity-30"
-                  />
+                  
+                  {/* Bottom row: Character Count (left) and Button (right) */}
+                  <div className="flex justify-between items-center w-full">
+                    {/* Character Count - Left */}
+                    <span className="text-xs text-gray-500">
+                      {prompt.length}/{MAX_PROMPT_LENGTH}
+                    </span>
+                    
+                    {/* Button - Right */}
+                    <Button
+                      variant="ghost"
+                      size="large"
+                      leftIcon={({ className }) => <ArrowUpIcon className={`${className} p-1 bg-[#15B8A6] rounded-full text-white`} />}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleGenerate();
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      disabled={isGenerating || isFileUploading || !prompt.trim() || !isUploaded || hasViolation}
+                      className="rounded-xl p-0 flex-shrink-0 border-none outline-none disabled:opacity-30"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -659,6 +692,78 @@ export const AIEdit = () => {
               variant="ghost"
               size="medium"
               onClick={() => setShowViolationModal(false)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1 hover:bg-white/20 rounded-full"
+              leftIcon={XMarkIcon}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Text Violation Modal - Only show in chat mode */}
+      {viewMode === "chat" && showTextViolationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowTextViolationModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden z-10 animate-in fade-in zoom-in duration-200">
+            {/* Header with gradient */}
+            <div className="bg-red-500 px-6 py-5">
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <ExclamationTriangleIcon className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    Content Policy Violation
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6">
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 mb-4">
+                <p className="text-gray-500 leading-relaxed">
+                  Your text violates our content policy. Offensive or hateful content is not allowed. Please revise your prompt before generating.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <p className="text-sm text-gray-600 mb-2 font-medium">
+                  Content Guidelines:
+                </p>
+                <ul className="text-sm text-gray-700 space-y-1.5 list-disc list-inside">
+                  <li>Do not use offensive or hateful language</li>
+                  <li>Do not include inappropriate content in your prompt</li>
+                  <li>Keep your prompts respectful and appropriate</li>
+                  <li>Only prompts that pass moderation can be used</li>
+                </ul>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-center">
+                <Button
+                  variant="primary"
+                  size="small"
+                  onClick={() => {
+                    setShowTextViolationModal(false);
+                  }}
+                  className="px-6"
+                >
+                  Got it, I'll revise
+                </Button>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <Button
+              variant="ghost"
+              size="medium"
+              onClick={() => setShowTextViolationModal(false)}
               className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors p-1 hover:bg-white/20 rounded-full"
               leftIcon={XMarkIcon}
             />

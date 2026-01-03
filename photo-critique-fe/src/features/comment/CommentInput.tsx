@@ -1,9 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
-import { SparklesIcon, PhotoIcon, ArrowPathIcon, PaperAirplaneIcon, CheckIcon } from "@heroicons/react/24/outline";
+import {
+  SparklesIcon,
+  PhotoIcon,
+  PaperAirplaneIcon,
+  CheckIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import { Button, Modal } from "../../components/common";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { type ImageInfo, commentService, type CommentResponse } from "../../services";
+import {
+  type ImageInfo,
+  commentService,
+  type CommentResponse,
+} from "../../services";
 import { CommentImage } from "./CommentImage";
 import { showToast } from "../../utils";
 import { ToastType } from "../../components/Toast";
@@ -29,12 +39,17 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   disabled = false,
   onCommentCreated,
 }) => {
+  const MAX_COMMENT_LENGTH = 1000;
   const [content, setContent] = useState("");
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    0
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    null
+  );
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatingProgress, setGeneratingProgress] = useState(0);
+  const [generationStatus, setGenerationStatus] = useState<"uploading" | "editing" | "done" | null>(null);
   const [showModal, setShowModal] = useState<ModalType>(null);
 
   // Filter only images (not videos)
@@ -42,7 +57,8 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     img.contentType?.startsWith("image/")
   );
 
-  const selectedImage = selectedImageIndex !== null ? availableImages[selectedImageIndex] : null;
+  const selectedImage =
+    selectedImageIndex !== null ? availableImages[selectedImageIndex] : null;
 
   const handlePostClick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,27 +101,35 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   };
 
   const handleGenerateClick = async () => {
-    if (!content.trim() || !selectedImage || isSubmitting || disabled || isGenerating) return;
+    if (
+      !content.trim() ||
+      !selectedImage ||
+      isSubmitting ||
+      disabled ||
+      isGenerating
+    )
+      return;
 
     setIsGenerating(true);
-    setGeneratingProgress(0);
+    setGenerationStatus("uploading");
 
     try {
       const result = await commentService.generateImage(
         content.trim(),
         selectedImage.url,
-        (progress) => {
-          setGeneratingProgress(progress);
+        (status) => {
+          setGenerationStatus(status);
         }
       );
 
       // Store generated image URL
       setGeneratedImageUrl(result.imageUrl);
+      setGenerationStatus("done");
     } catch (error: any) {
       showToast(ToastType.ERROR, error.message || "Failed to generate image");
+      setGenerationStatus(null);
     } finally {
       setIsGenerating(false);
-      setGeneratingProgress(0);
     }
   };
 
@@ -113,24 +137,25 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     if (!selectedImage) return;
     setShowModal(null);
     setIsGenerating(true);
-    setGeneratingProgress(0);
+    setGenerationStatus("uploading");
 
     try {
       const result = await commentService.generateImage(
         content.trim(),
         selectedImage.url,
-        (progress) => {
-          setGeneratingProgress(progress);
+        (status) => {
+          setGenerationStatus(status);
         }
       );
 
       // Store generated image URL
       setGeneratedImageUrl(result.imageUrl);
+      setGenerationStatus("done");
     } catch (error: any) {
       showToast(ToastType.ERROR, error.message || "Failed to generate image");
+      setGenerationStatus(null);
     } finally {
       setIsGenerating(false);
-      setGeneratingProgress(0);
     }
   };
 
@@ -144,7 +169,12 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     !disabled
   );
 
-  const canPost = !!(content.trim() && !isSubmitting && !disabled && !isGenerating);
+  const canPost = !!(
+    content.trim() &&
+    !isSubmitting &&
+    !disabled &&
+    !isGenerating
+  );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -155,7 +185,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     textarea.style.height = "auto";
 
     const lineHeight = 24;
-    const maxHeight = lineHeight * 5; // 5 lines max  
+    const maxHeight = lineHeight * 5; // 5 lines max
 
     // Set height based on content, but cap at maxHeight
     const newHeight = Math.min(textarea.scrollHeight, maxHeight);
@@ -180,7 +210,11 @@ export const CommentInput: React.FC<CommentInputProps> = ({
                 <button
                   key={index}
                   type="button"
-                  onClick={() => setSelectedImageIndex(index === selectedImageIndex ? null : index)}
+                  onClick={() =>
+                    setSelectedImageIndex(
+                      index === selectedImageIndex ? null : index
+                    )
+                  }
                   className={cn(
                     "relative shrink-0 w-20 h-20 lg:w-15 lg:h-15 rounded-xl overflow-hidden border-2 transition-all",
                     index === selectedImageIndex
@@ -208,7 +242,8 @@ export const CommentInput: React.FC<CommentInputProps> = ({
               <div className="text-xs text-gray-500 flex items-center gap-1">
                 <PhotoIcon className="w-4 h-4" />
                 <span>
-                  Selected image {selectedImageIndex! + 1} of {availableImages.length}
+                  Selected image {selectedImageIndex! + 1} of{" "}
+                  {availableImages.length}
                 </span>
               </div>
             )}
@@ -217,7 +252,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
         {/* Input Form */}
         <form onSubmit={handlePostClick}>
-          <div className="flex flex-col w-full border border-gray-300 rounded-2xl p-3 gap-4 items-end">
+          <div className="flex flex-col w-full border border-gray-300 rounded-2xl p-3 gap-4 items-end relative">
             <textarea
               ref={textareaRef}
               className="w-full border-none outline-none resize-none placeholder-gray-400 text-gray-800"
@@ -228,10 +263,20 @@ export const CommentInput: React.FC<CommentInputProps> = ({
               }}
               placeholder={placeholder}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value.length <= MAX_COMMENT_LENGTH) {
+                  setContent(e.target.value);
+                }
+              }}
+              maxLength={MAX_COMMENT_LENGTH}
               rows={1}
               disabled={disabled || isSubmitting || isGenerating}
             />
+
+            {/* Character Count - Left bottom, sát mép */}
+            <span className="absolute bottom-3 left-3 text-xs text-gray-500">
+              {content.length}/{MAX_COMMENT_LENGTH}
+            </span>
 
             {/* Action Buttons - Right aligned */}
             <div className="flex justify-end gap-2">
@@ -256,38 +301,25 @@ export const CommentInput: React.FC<CommentInputProps> = ({
                 isLoading={isSubmitting}
                 className="shrink-0 p-3"
                 leftIcon={PaperAirplaneIcon}
-              >
-              </Button>
+              ></Button>
             </div>
           </div>
 
-          {/* Generating Progress - Below input, above buttons */}
-          {isGenerating && (
-            <div className="bg-[#15B8A6]/10 border-2 border-[#15B8A6]/30 rounded-2xl p-4 mt-4">
+          {/* Generating Status - Show when generating */}
+          {isGenerating && generationStatus && (
+            <div className="mt-4 bg-[#15B8A6]/10 border-2 border-[#15B8A6]/30 rounded-2xl p-4">
               <div className="flex items-center gap-3">
                 <ArrowPathIcon className="w-6 h-6 text-[#15B8A6] animate-spin" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-[#15B8A6]">
-                      Generating image...
-                    </span>
-                    <span className="text-sm font-bold text-[#15B8A6]">
-                      {Math.round(generatingProgress)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-[#15B8A6]/20 rounded-full h-2">
-                    <div
-                      className="bg-[#15B8A6]/80 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${generatingProgress}%` }}
-                    />
-                  </div>
-                </div>
+                <span className="text-sm font-medium text-[#15B8A6]">
+                  {generationStatus === "uploading" && "Uploading image..."}
+                  {generationStatus === "editing" && "Editing image..."}
+                  {generationStatus === "done" && "Image generated successfully!"}
+                </span>
               </div>
             </div>
           )}
 
           {/* Generated Image Preview - Below input, above buttons */}
-
           {generatedImageUrl && !isGenerating && (
             <div className="mt-2">
               <CommentImage
@@ -322,4 +354,3 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     </>
   );
 };
-

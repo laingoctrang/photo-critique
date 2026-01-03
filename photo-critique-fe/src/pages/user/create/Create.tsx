@@ -39,7 +39,7 @@ export const Create = () => {
   }
 
   const [caption, setCaption] = useState("");
-  const MAX_CAPTION_LENGTH = 5000;
+  const MAX_CAPTION_LENGTH = 1000;
   // const [tags, setTags] = useState<string[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyType>(PrivacyType.PUBLIC);
   const [files, setFiles] = useState<FileUploadItemData[]>(fileItem ? [fileItem] : []);
@@ -96,6 +96,10 @@ export const Create = () => {
 
   const handleFilesChange = (newFiles: FileUploadItemData[]) => {
     setFiles(newFiles);
+  };
+
+  const handleViolationDetected = (_item: FileUploadItemData) => {
+    setShowViolationModal(true);
   };
 
   const handlePreview = (item: FileUploadItemData) => {
@@ -278,8 +282,9 @@ export const Create = () => {
                 onFilesChange={handleFilesChange}
                 onPreview={handlePreview}
                 onViolationClick={() => setShowViolationModal(true)}
+                onViolationDetected={handleViolationDetected}
                 maxFiles={10}
-                acceptedTypes="image/png, image/jpeg"
+                acceptedTypes=".jpg,.jpeg,.png,image/jpeg,image/png"
                 maxSize={10 * 1024 * 1024} // 10MB
                 className="lg:h-[calc(100vh-222px)] w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
               />

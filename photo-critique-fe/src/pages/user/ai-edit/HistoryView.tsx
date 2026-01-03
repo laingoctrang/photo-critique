@@ -67,9 +67,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onReEdit }) => {
     try {
       await imageGenerationHistoryService.delete(itemToDelete);
       setHistory(history.filter((item) => item.id !== itemToDelete));
-      showToast(ToastType.SUCCESS, "History deleted successfully");
+      showToast(ToastType.SUCCESS, "History deleted successfully", undefined, 2000);
     } catch {
-      showToast(ToastType.ERROR, "Failed to delete history");
+      showToast(ToastType.ERROR, "Failed to delete history", undefined, 2000);
     } finally {
       setDeleteModalOpen(false);
       setItemToDelete(null);

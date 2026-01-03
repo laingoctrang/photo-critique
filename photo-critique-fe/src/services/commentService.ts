@@ -1,6 +1,6 @@
-import { api } from './api';
-import axios from 'axios';
-import type { ApiResponse } from './types';
+import { api } from "./api";
+import axios from "axios";
+import type { ApiResponse } from "./types";
 
 export interface CommentUser {
   id: string;
@@ -46,14 +46,14 @@ export interface CommentListResponse {
   number: number;
 }
 
-export type CommentSortOption = 'newest' | 'oldest' | 'mostLiked' | 'helpful';
+export type CommentSortOption = "newest" | "oldest" | "mostLiked" | "helpful";
 
 export const commentService = {
   getComments: async (
     postId: string,
     page: number = 0,
     size: number = 10,
-    sort: CommentSortOption = 'newest',
+    sort: CommentSortOption = "newest",
     originalImage?: string
   ): Promise<CommentListResponse> => {
     const params: any = { page, size, sort };
@@ -72,11 +72,11 @@ export const commentService = {
   ): Promise<CommentResponse> => {
     const response = await api.post<ApiResponse<CommentResponse>>(
       `/posts/${data.postId}/comments`,
-      { 
-        content: data.content, 
-        parentCommentId: data.parentCommentId, 
+      {
+        content: data.content,
+        parentCommentId: data.parentCommentId,
         aiGeneratedImage: data.aiGeneratedImage,
-        originalImage: data.originalImage 
+        originalImage: data.originalImage,
       }
     );
     return response.data.data;
@@ -95,36 +95,41 @@ export const commentService = {
   },
 
   deleteComment: async (commentId: string, postId: string): Promise<string> => {
-    const response = await api.delete<ApiResponse<void>>(`/posts/${postId}/comments/${commentId}`);
-    return response.data.message || 'Comment deleted successfully';
+    const response = await api.delete<ApiResponse<void>>(
+      `/posts/${postId}/comments/${commentId}`
+    );
+    return response.data.message || "Comment deleted successfully";
   },
 
   likeComment: async (commentId: string, postId: string): Promise<string> => {
     const response = await api.post<ApiResponse<void>>(
       `/posts/${postId}/comments/${commentId}/like`
     );
-    return response.data.message || 'Comment liked successfully';
+    return response.data.message || "Comment liked successfully";
   },
 
   unlikeComment: async (commentId: string, postId: string): Promise<string> => {
     const response = await api.delete<ApiResponse<void>>(
       `/posts/${postId}/comments/${commentId}/like`
     );
-    return response.data.message || 'Comment unliked successfully';
+    return response.data.message || "Comment unliked successfully";
   },
 
   markAsHelpful: async (commentId: string, postId: string): Promise<string> => {
     const response = await api.post<ApiResponse<void>>(
       `/posts/${postId}/comments/${commentId}/helpful`
     );
-    return response.data.message || 'Comment marked as helpful';
+    return response.data.message || "Comment marked as helpful";
   },
 
-  unmarkAsHelpful: async (commentId: string, postId: string): Promise<string> => {
+  unmarkAsHelpful: async (
+    commentId: string,
+    postId: string
+  ): Promise<string> => {
     const response = await api.delete<ApiResponse<void>>(
       `/posts/${postId}/comments/${commentId}/helpful`
     );
-    return response.data.message || 'Comment unmarked as helpful';
+    return response.data.message || "Comment unmarked as helpful";
   },
 
   generateImage: async (
@@ -132,31 +137,35 @@ export const commentService = {
     prompt: string,
     imageUrl: string,
     // _postId: string,
-    onProgress?: (progress: number) => void
+    onStatusChange?: (status: "uploading" | "editing" | "done") => void
   ): Promise<{ imageUrl: string }> => {
     // Call external edit-image API
-    const response = await axios.post<{ task_id: string; image_url?: string | null }>(
-      // 'https://biform-relatedly-lera.ngrok-free.dev/edit-image',
-      'https://fastapi-qwen-test.onrender.com/edit-image',
+    const response = await axios.post<{
+      task_id: string;
+      image_url?: string | null;
+    }>(
+      "https://unbroached-expandible-ronda.ngrok-free.dev/edit-image",
+      // 'https://fastapi-qwen-test.onrender.com/edit-image',
       {
         image_url: imageUrl,
         prompt: prompt,
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
         },
       }
     );
 
     const taskId = response.data.task_id;
     if (!taskId) {
-      throw new Error('Failed to generate image: No task_id in response');
+      throw new Error("Failed to generate image: No task_id in response");
     }
 
     // If image_url is already available, return it
     if (response.data.image_url) {
+      onStatusChange?.("done");
       return { imageUrl: response.data.image_url };
     }
 
@@ -166,34 +175,39 @@ export const commentService = {
         try {
           const progressResponse = await axios.get<{
             task_id: string;
-            progress: number;
+            status: "uploading" | "editing" | "done";
             image_url?: string;
-          // }>(`https://biform-relatedly-lera.ngrok-free.dev/progress/${taskId}`, {
-          }>(`https://fastapi-qwen-test.onrender.com/progress/${taskId}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-            },
-          });
+          }>(
+            `https://unbroached-expandible-ronda.ngrok-free.dev/progress/${taskId}`,
+            {
+              // }>(`https://fastapi-qwen-test.onrender.com/progress/${taskId}`, {
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+            }
+          );
 
-          const progress = progressResponse.data.progress || 0;
-          onProgress?.(progress);
+          const status = progressResponse.data.status;
+          onStatusChange?.(status);
 
-          // If image_url is available, generation is complete
-          if (progressResponse.data.image_url) {
+          // If status is done and image_url is available, generation is complete
+          if (status === "done" && progressResponse.data.image_url) {
             clearInterval(pollInterval);
             resolve({ imageUrl: progressResponse.data.image_url });
           }
         } catch (error: any) {
           clearInterval(pollInterval);
-          reject(new Error(error.message || 'Failed to check generation progress'));
+          reject(
+            new Error(error.message || "Failed to check generation progress")
+          );
         }
       }, 1000); // Poll every 1 second
 
       // Timeout after 5 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
-        reject(new Error('Image generation timeout'));
+        reject(new Error("Image generation timeout"));
       }, 5 * 60 * 1000);
     });
   },
