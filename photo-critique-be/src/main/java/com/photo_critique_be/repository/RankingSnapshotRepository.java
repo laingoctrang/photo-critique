@@ -6,7 +6,7 @@ import com.photo_critique_be.model.RankingSnapshot;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -19,9 +19,9 @@ public interface RankingSnapshotRepository extends MongoRepository<RankingSnapsh
     Optional<RankingSnapshot> findByTypeAndPeriodAndSnapshotDate(
             RankingType type, 
             RankingPeriod period, 
-            LocalDate snapshotDate
+            LocalDateTime snapshotDate
     );
     
-    void deleteBySnapshotDateBefore(LocalDate date);
+    void deleteBySnapshotDateBefore(LocalDateTime date);
 }
 

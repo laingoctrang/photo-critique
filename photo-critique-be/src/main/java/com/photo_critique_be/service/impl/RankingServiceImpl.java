@@ -41,7 +41,12 @@ public class RankingServiceImpl implements RankingService {
     private final ObjectMapper objectMapper;
 
     @Override
-    public RankingResponse getRanking(RankingType type, RankingPeriod period, Integer limit) {
+    public RankingResponse getRanking(RankingType type, RankingPeriod period, Integer limit, Integer page) {
+        // Convert page to offset: offset = page * limit (page is 0-based)
+        int pageValue = (page == null || page < 0) ? 0 : page;
+        int limitValue = (limit == null || limit <= 0) ? Integer.MAX_VALUE : limit;
+        int offset = pageValue * limitValue;
+
         // Thử lấy từ Redis cache trước
         String cacheKey = generateRedisKey(type, period);
         try {
@@ -49,7 +54,7 @@ public class RankingServiceImpl implements RankingService {
             if (cachedData != null) {
                 log.debug("Cache hit for ranking: {} - {}", type, period);
                 RankingResponse response = objectMapper.readValue(cachedData, RankingResponse.class);
-                return limitRankings(response, limit);
+                return paginateRankings(response, limitValue, offset);
             }
         } catch (Exception e) {
             log.warn("Error reading from cache: {}", e.getMessage());
@@ -75,14 +80,14 @@ public class RankingServiceImpl implements RankingService {
                     .orElse(createEmptyResponse(type, period));
         }
 
-        return limitRankings(response, limit);
+        return paginateRankings(response, limitValue, offset);
     }
 
     @Override
     @Transactional
     public void calculateAndSaveRanking(RankingType type, RankingPeriod period) {
         log.info("Calculating ranking: {} - {}", type, period);
-        LocalDate snapshotDate = LocalDate.now();
+        LocalDateTime snapshotDate = LocalDateTime.now();
         RankingSnapshot snapshot = new RankingSnapshot();
         snapshot.setType(type);
         snapshot.setPeriod(period);
@@ -303,13 +308,35 @@ public class RankingServiceImpl implements RankingService {
         return rankings;
     }
 
+    /**
+     * Calculate the start date for a ranking period based on calendar boundaries.
+     * WEEK: Monday of current week (00:00:00)
+     * MONTH: 1st day of current month (00:00:00)
+     * YEAR: January 1st of current year (00:00:00)
+     * ALL: January 1st, 2000 (00:00:00)
+     */
     private LocalDateTime getStartDate(RankingPeriod period) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = LocalDate.now();
         return switch (period) {
-            case WEEK -> now.minusWeeks(1);
-            case MONTH -> now.minusMonths(1);
-            case YEAR -> now.minusYears(1);
-            case ALL -> LocalDateTime.of(2000, 1, 1, 0, 0); // Lấy tất cả
+            case WEEK -> {
+                // Get Monday of current week
+                // DayOfWeek.MONDAY = 1, getDayOfWeek().getValue() returns 1-7 (Monday-Sunday)
+                int dayOfWeek = today.getDayOfWeek().getValue();
+                int daysToSubtract = dayOfWeek - 1; // Days to subtract to get to Monday
+                LocalDate monday = today.minusDays(daysToSubtract);
+                yield monday.atStartOfDay(); // Monday 00:00:00
+            }
+            case MONTH -> {
+                // Get 1st day of current month
+                LocalDate firstOfMonth = today.withDayOfMonth(1);
+                yield firstOfMonth.atStartOfDay(); // 1st of month 00:00:00
+            }
+            case YEAR -> {
+                // Get January 1st of current year
+                LocalDate firstOfYear = today.withDayOfYear(1);
+                yield firstOfYear.atStartOfDay(); // Jan 1st 00:00:00
+            }
+            case ALL -> LocalDateTime.of(2000, 1, 1, 0, 0); // All time from 2000-01-01
         };
     }
 
@@ -355,19 +382,44 @@ public class RankingServiceImpl implements RankingService {
                 .build();
     }
 
-    private RankingResponse limitRankings(RankingResponse response, Integer limit) {
-        if (limit == null || limit <= 0) {
-            return response;
+    private RankingResponse paginateRankings(RankingResponse response, Integer limit, Integer offset) {
+        int offsetValue = (offset == null || offset < 0) ? 0 : offset;
+        int totalCount = response.getTotalCount();
+
+        if (response.getUserRankings() != null && !response.getUserRankings().isEmpty()) {
+            List<UserRankingResponse> userRankings = response.getUserRankings();
+            
+            // Apply offset and limit
+            int fromIndex = Math.min(offsetValue, userRankings.size());
+            int toIndex = limit == null || limit <= 0 
+                ? userRankings.size() 
+                : Math.min(fromIndex + limit, userRankings.size());
+            
+            if (fromIndex < userRankings.size()) {
+                response.setUserRankings(userRankings.subList(fromIndex, toIndex));
+            } else {
+                response.setUserRankings(Collections.emptyList());
+            }
+            // Keep original totalCount for pagination info
+            response.setTotalCount(totalCount);
         }
 
-        if (response.getUserRankings() != null && response.getUserRankings().size() > limit) {
-            response.setUserRankings(response.getUserRankings().subList(0, limit));
-            response.setTotalCount(limit);
-        }
-
-        if (response.getPostRankings() != null && response.getPostRankings().size() > limit) {
-            response.setPostRankings(response.getPostRankings().subList(0, limit));
-            response.setTotalCount(limit);
+        if (response.getPostRankings() != null && !response.getPostRankings().isEmpty()) {
+            List<PostRankingResponse> postRankings = response.getPostRankings();
+            
+            // Apply offset and limit
+            int fromIndex = Math.min(offsetValue, postRankings.size());
+            int toIndex = limit == null || limit <= 0 
+                ? postRankings.size() 
+                : Math.min(fromIndex + limit, postRankings.size());
+            
+            if (fromIndex < postRankings.size()) {
+                response.setPostRankings(postRankings.subList(fromIndex, toIndex));
+            } else {
+                response.setPostRankings(Collections.emptyList());
+            }
+            // Keep original totalCount for pagination info
+            response.setTotalCount(totalCount);
         }
 
         return response;
@@ -377,7 +429,7 @@ public class RankingServiceImpl implements RankingService {
         return RankingResponse.builder()
                 .type(type)
                 .period(period)
-                .snapshotDate(LocalDate.now())
+                .snapshotDate(LocalDateTime.now())
                 .userRankings(Collections.emptyList())
                 .postRankings(Collections.emptyList())
                 .totalCount(0)
@@ -400,6 +452,26 @@ public class RankingServiceImpl implements RankingService {
         } catch (Exception e) {
             log.error("Error caching ranking: {}", e.getMessage());
         }
+    }
+
+    @Override
+    public UserRankingResponse getUserRankingByUserId(String userId, RankingType type, RankingPeriod period) {
+        if (type != RankingType.USER_XP) {
+            throw new IllegalArgumentException("getUserRankingByUserId only supports USER_XP ranking type");
+        }
+
+        // Get full ranking (without limit and offset)
+        RankingResponse rankingResponse = getRanking(type, period, null, null);
+        
+        if (rankingResponse.getUserRankings() == null || rankingResponse.getUserRankings().isEmpty()) {
+            return null;
+        }
+
+        // Find user in ranking
+        return rankingResponse.getUserRankings().stream()
+                .filter(user -> user.getUserId().equals(userId))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override

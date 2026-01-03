@@ -34,23 +34,23 @@ export interface RankingResponse {
 }
 
 export const rankingService = {
-    getUserXPRanking: async (period: RankingPeriod = 'WEEK', limit?: number): Promise<RankingResponse> => {
+    getUserXPRanking: async (period: RankingPeriod = 'WEEK', limit?: number, page: number = 0): Promise<RankingResponse> => {
         const response = await api.get<ApiResponse<RankingResponse>>('/rankings/users/xp', {
-            params: { period, limit }
+            params: { period, limit, page }
         });
         return response.data.data;
     },
 
-    getPostReactionsRanking: async (period: RankingPeriod = 'WEEK', limit?: number): Promise<RankingResponse> => {
+    getPostReactionsRanking: async (period: RankingPeriod = 'WEEK', limit?: number, page: number = 0): Promise<RankingResponse> => {
         const response = await api.get<ApiResponse<RankingResponse>>('/rankings/posts/reactions', {
-            params: { period, limit }
+            params: { period, limit, page }
         });
         return response.data.data;
     },
 
-    getPostCommentsRanking: async (period: RankingPeriod = 'WEEK', limit?: number): Promise<RankingResponse> => {
+    getPostCommentsRanking: async (period: RankingPeriod = 'WEEK', limit?: number, page: number = 0): Promise<RankingResponse> => {
         const response = await api.get<ApiResponse<RankingResponse>>('/rankings/posts/comments', {
-            params: { period, limit }
+            params: { period, limit, page }
         });
         return response.data.data;
     },
@@ -59,6 +59,13 @@ export const rankingService = {
         await api.post('/rankings/refresh', null, {
             params: { type, period }
         });
+    },
+
+    getUserRankingByUserId: async (userId: string, period: RankingPeriod = 'WEEK'): Promise<UserRankingResponse | null> => {
+        const response = await api.get<ApiResponse<UserRankingResponse>>(`/rankings/users/${userId}/xp`, {
+            params: { period }
+        });
+        return response.data.data;
     },
 };
 

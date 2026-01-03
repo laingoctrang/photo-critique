@@ -12,7 +12,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,7 +34,7 @@ public class RankingSnapshot {
     private RankingPeriod period;
 
     @Field("snapshot_date")
-    private LocalDate snapshotDate;
+    private LocalDateTime snapshotDate;
 
     @Field("user_rankings")
     private List<UserRankingItem> userRankings;

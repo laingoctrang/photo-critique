@@ -17,11 +17,11 @@ export const Ranking: React.FC = () => {
 
     return (
         <div className="min-h-screen">
-            <div className="w-full flex flex-row gap-6 items-end justify-between mb-6">
+            <div className="w-full flex flex-row gap-6 items-end justify-between mb-4">
                 {/* Header */}
                 <div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Ranking Board</h1>
-                    <p className="text-gray-600">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Ranking Board</h1>
+                    <p className="text-gray-600 text-sm">
                         Discover the most outstanding photographers and works in the community.
                     </p>
                 </div>
@@ -35,7 +35,7 @@ export const Ranking: React.FC = () => {
                             className={`px-4 py-2 font-medium text-sm rounded-full transition-all ${
                                 period === p.value
                                     ? 'bg-[#15B8A6] text-white'
-                                    : 'bg-transparent text-gray-700 hover:bg-gray-50'
+                                    : 'bg-transparent text-gray-700 hover:bg-gray-100'
                             }`}
                         >
                             {p.label}
@@ -48,7 +48,7 @@ export const Ranking: React.FC = () => {
                 {/* Main Content - Two Columns */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     {/* Left Column - User Rankings */}
-                    <div className="lg:sticky lg:top-4 lg:self-start lg:col-span-2">
+                    <div className="lg:sticky lg:top-4 lg:self-start lg:col-span-2 h-[calc(95vh)]">
                         <UserRanking period={period} />
                     </div>
 
@@ -57,7 +57,7 @@ export const Ranking: React.FC = () => {
                         <PostRanking
                             type={postRankingType}
                             period={period}
-                            limit={20}
+                            limit={12}
                             onTypeChange={setPostRankingType}
                         />
                     </div>

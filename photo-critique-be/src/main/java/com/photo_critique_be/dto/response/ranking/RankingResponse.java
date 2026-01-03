@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -17,7 +17,7 @@ import java.util.List;
 public class RankingResponse {
     private RankingType type;
     private RankingPeriod period;
-    private LocalDate snapshotDate;
+    private LocalDateTime snapshotDate;
     private List<UserRankingResponse> userRankings;
     private List<PostRankingResponse> postRankings;
     private Integer totalCount;
