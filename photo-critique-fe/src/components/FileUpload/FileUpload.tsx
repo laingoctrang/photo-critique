@@ -6,6 +6,7 @@ import {
   ArrowPathIcon,
   XMarkIcon,
   PlusIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "../common/Button";
 import { FileUploadItem, type FileUploadItemData } from "./FileUploadItem";
@@ -26,6 +27,7 @@ interface ThumbnailItemProps {
   index: number;
   onDelete: (id: string) => void;
   onPreview?: (item: FileUploadItemData) => void;
+  onViolationClick?: (item: FileUploadItemData) => void;
   formatFileSize: (bytes: number) => string;
   getFileName: (item: FileUploadItemData) => string;
   getFileSize: (item: FileUploadItemData) => number;
@@ -43,6 +45,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   index,
   onDelete,
   onPreview,
+  onViolationClick,
   formatFileSize,
   getFileName,
   getFileSize,
@@ -57,6 +60,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   const fileName = getFileName(item);
   const fileSize = getFileSize(item);
   const isUploading = item.status === "uploading";
+  const isViolating = item.moderationResult && !item.moderationResult.allowed;
   
   // Use imageInfo.url if available, otherwise create object URL for file
   const previewUrl = React.useMemo(() => {
@@ -91,10 +95,17 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
       )}
     >
       <div 
-        className="w-full -h-full aspect-square rounded-2xl border border-gray-200 bg-white overflow-hidden relative group cursor-pointer"
+        className={cn(
+          "w-full -h-full aspect-square rounded-2xl overflow-hidden relative group cursor-pointer",
+          isViolating 
+            ? "border-2 border-red-500 bg-red-50" 
+            : "border border-gray-200 bg-white"
+        )}
         onClick={() => {
-          if (!isUploading && onPreview && item.status === "completed") {
+          if (!isUploading && onPreview && item.status === "completed" && !isViolating) {
             onPreview(item);
+          } else if (!isUploading && isViolating && onViolationClick) {
+            onViolationClick(item);
           }
         }}
       >
@@ -117,6 +128,16 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
             <ArrowPathIcon className="w-10 h-10 text-white animate-spin mb-2" />
             <span className="text-sm text-white font-medium">
               {item.progress}%
+            </span>
+          </div>
+        )}
+
+        {/* Violation Overlay */}
+        {!isUploading && isViolating && (
+          <div className="absolute inset-0 bg-red-500/30 flex flex-col items-center justify-center">
+            <ExclamationTriangleIcon className="w-8 h-8 text-red-600 mb-2" />
+            <span className="text-xs text-red-700 font-semibold text-center px-2">
+              Policy Violation
             </span>
           </div>
         )}
@@ -155,6 +176,7 @@ interface FileUploadProps {
   onFilesChange: (files: FileUploadItemData[]) => void;
   onPreview?: (item: FileUploadItemData) => void;
   onViolationClick?: (item: FileUploadItemData) => void;
+  onViolationDetected?: (item: FileUploadItemData) => void;
   maxFiles?: number;
   acceptedTypes?: string;
   maxSize?: number; // in bytes
@@ -169,8 +191,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onFilesChange,
   onPreview,
   onViolationClick,
+  onViolationDetected,
   maxFiles = 10,
-  acceptedTypes = "image/*",
+  acceptedTypes = ".jpg,.jpeg,.png,image/jpeg,image/png",
   maxSize = 10 * 1024 * 1024, // 10MB default
   variant = "default",
   className,
@@ -201,9 +224,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       // Validate files
       const validFiles: File[] = [];
+      const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+      const allowedExtensions = [".png", ".jpg", ".jpeg"];
+      
       for (const file of newFiles) {
+        // Check file extension - only PNG and JPEG allowed (exclude JFIF)
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+        if (!allowedExtensions.includes(fileExtension)) {
+          showToast(ToastType.ERROR, `File ${file.name} is not supported. Only PNG and JPEG images are allowed.`);
+          continue;
+        }
+        
+        // Check MIME type - only PNG and JPEG allowed
+        if (!allowedTypes.includes(file.type.toLowerCase())) {
+          showToast(ToastType.ERROR, `File ${file.name} is not supported. Only PNG and JPEG images are allowed.`);
+          continue;
+        }
+        
         if (file.size > maxSize) {
-          alert(`File ${file.name} is too large. Maximum size is ${maxSize / 1024 / 1024}MB`);
+          showToast(ToastType.ERROR, `File ${file.name} is too large. Maximum size is ${maxSize / 1024 / 1024}MB`);
           continue;
         }
         validFiles.push(file);
@@ -269,6 +308,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 imageInfo.url,
               ]);
               const moderationResult = moderationResponse.results[0];
+              console.log(moderationResult);
 
               // Update file with moderation result
               currentFiles = filesRef.current;
@@ -282,6 +322,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               );
               filesRef.current = updatedFiles;
               onFilesChange(updatedFiles);
+
+              // Auto-show violation modal if not allowed
+              if (moderationResult && !moderationResult.allowed) {
+                const violatedItem = updatedFiles.find((f) => f.id === item.id);
+                if (violatedItem && onViolationDetected) {
+                  onViolationDetected(violatedItem);
+                }
+              }
             } catch (error) {
               // If moderation fails, log but don't block upload
               console.error("Moderation check failed:", error);
@@ -494,7 +542,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             Drag and drop your file here
           </p>
           <p className="text-sm text-gray-500 font-light mb-4">
-            Supported Formats: JPEG, PNG
+            Supported Formats: JPEG, PNG, JPG
             <br />
             Maximum file size: {maxSize / 1024 / 1024}MB
           </p>
@@ -565,6 +613,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               index={index}
               onDelete={handleDelete}
               onPreview={onPreview}
+              onViolationClick={onViolationClick}
               formatFileSize={formatFileSize}
               getFileName={getFileName}
               getFileSize={getFileSize}

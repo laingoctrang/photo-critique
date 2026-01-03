@@ -28,7 +28,6 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
   const [hasMore, setHasMore] = useState(true);
   const [selectedCommentIds, setSelectedCommentIds] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatingProgress, setGeneratingProgress] = useState(0);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [imgRatio, setImgRatio] = useState<number | null>(null);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
@@ -168,7 +167,6 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
     if (cancelTokenRef.current) {
       cancelTokenRef.current.cancelled = true;
       setIsGenerating(false);
-      setGeneratingProgress(0);
       showToast(ToastType.INFO, "Generation cancelled");
     }
   };
@@ -227,7 +225,6 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
     // Create cancel token
     cancelTokenRef.current = { cancelled: false };
     setIsGenerating(true);
-    setGeneratingProgress(0);
 
     try {
       // Combine selected comments into a prompt
@@ -236,12 +233,7 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
 
       const result = await generateService.generateImage(
         combinedPrompt,
-        selectedImageUrl,
-        (progress) => {
-          if (!cancelTokenRef.current?.cancelled) {
-            setGeneratingProgress(progress);
-          }
-        }
+        selectedImageUrl
       );
 
       // Only update if not cancelled
@@ -261,7 +253,6 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
       }
     } finally {
       setIsGenerating(false);
-      setGeneratingProgress(0);
       cancelTokenRef.current = null;
     }
   };
@@ -506,7 +497,7 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
               <div className="relative">
                 <SparklesIcon className="w-15 h-15 text-[#15B8A6] animate-bounce" />
               </div>
-              <p className="text-white font-medium animate-pulse">Generating {Math.round(generatingProgress)}%</p>
+              <p className="text-white font-medium animate-pulse">Generating...</p>
               <Button
                 variant="secondary"
                 size="small"
