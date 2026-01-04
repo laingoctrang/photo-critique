@@ -23,7 +23,7 @@ public class Conversation {
     private ObjectId id;
 
     @Field("participants")
-    private List<ObjectId> participants;
+    private List<String> participants;
 
     @Field("last_message")
     private LastMessage lastMessage;
