@@ -7,7 +7,7 @@ export { commentService, type CommentResponse, type CreateCommentRequest, type C
 export { moderationService, type ModerationResult, type ModerationResponse } from './moderationService';
 export { tagService, type TagResponse } from './tagService';
 export { badgeService, type BadgeResponse } from './badgeService';
-export { userService, type UserProfileResponse, type BadgeEarnedResponse, type UserListItemResponse, type PageResponse } from './userService';
+export { userService, type UserProfileResponse, type BadgeEarnedResponse, type UserListItemResponse, type PageResponse, type AdminUserResponse } from './userService';
 export { rankingService, type RankingPeriod, type RankingType, type UserRankingResponse, type PostRankingResponse, type RankingResponse } from './rankingService';
 export { imageGenerationHistoryService, type CreateImageGenerationHistoryRequest, type ImageGenerationHistoryResponse } from './imageGenerationHistoryService';
 export { generateService } from './generateService';

@@ -31,6 +31,7 @@ export interface UserProfileResponse {
   xpPoints?: number;
   level?: number;
   badges?: BadgeEarnedResponse[];
+  xpToNextLevel?: number;
   followersCount?: number;
   followingCount?: number;
   createdAt: string;
@@ -63,6 +64,24 @@ export interface UserListItemResponse {
   followStatus?: string;
 }
 
+export interface AdminUserResponse {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  profilePicture: string;
+  roles: string[];
+  enabled: boolean;
+  xpPoints: number;
+  level: number;
+  followersCount: number;
+  followingCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastSeen?: string;
+  isOnline?: boolean;
+}
+
 export const userService = {
   getProfile: async (): Promise<UserProfileResponse> => {
     const response = await api.get<ApiResponse<UserProfileResponse>>('/users/me');
@@ -82,11 +101,6 @@ export const userService = {
   updateProfile: async (data: UpdateProfileData): Promise<UserProfileResponse> => {
     const response = await api.put<ApiResponse<UserProfileResponse>>('/users/me', data);
     return response.data.data;
-  },
-
-  getUserById: async (userId: string): Promise<User> => {
-    const response = await api.get<User>(`/users/${userId}`);
-    return response.data;
   },
 
   searchUsers: async (query: string): Promise<User[]> => {
@@ -133,6 +147,73 @@ export const userService = {
   getFollowing: async (userId: string, page: number = 0, size: number = 20): Promise<PageResponse<UserListItemResponse>> => {
     const response = await api.get<ApiResponse<PageResponse<UserListItemResponse>>>(`/users/${userId}/following`, {
       params: { page, size }
+    });
+    return response.data.data;
+  },
+
+  // Admin functions
+  getAllUsers: async (params: {
+    search?: string;
+    filters?: Record<string, string>;
+    sortBy?: string;
+    sortDirection?: 'asc' | 'desc';
+    page?: number;
+    size?: number;
+  }): Promise<{
+    content: AdminUserResponse[];
+    totalElements: number;
+    totalPages: number;
+    page: number;
+    size: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  }> => {
+    const response = await api.get<ApiResponse<PageResponse<AdminUserResponse>>>('/admin/users', {
+      params: {
+        search: params.search,
+        filters: params.filters,
+        sortBy: params.sortBy,
+        sortDirection: params.sortDirection,
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+      },
+    });
+    const data = response.data.data;
+    return {
+      content: data.content,
+      totalElements: data.totalElements,
+      totalPages: data.totalPages,
+      page: data.number,
+      size: data.size,
+      hasNext: !data.last,
+      hasPrevious: data.number > 0,
+    };
+  },
+
+  getAdminUserById: async (userId: string): Promise<AdminUserResponse> => {
+    const response = await api.get<ApiResponse<AdminUserResponse>>(`/admin/users/${userId}`);
+    return response.data.data;
+  },
+
+  enableUser: async (userId: string): Promise<void> => {
+    await api.put<ApiResponse<void>>(`/admin/users/${userId}/enable`);
+  },
+
+  disableUser: async (userId: string): Promise<void> => {
+    await api.put<ApiResponse<void>>(`/admin/users/${userId}/disable`);
+  },
+
+  changeUserRole: async (userId: string, role: string): Promise<void> => {
+    await api.put<ApiResponse<void>>(`/admin/users/${userId}/role`, { role });
+  },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    await api.delete<ApiResponse<void>>(`/admin/users/${userId}`);
+  },
+
+  searchUsersForChat: async (query: string): Promise<UserListItemResponse[]> => {
+    const response = await api.get<ApiResponse<UserListItemResponse[]>>(`/users/search`, {
+      params: { q: query }
     });
     return response.data.data;
   },

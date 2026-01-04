@@ -1,9 +1,8 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks";
-import { Button, SearchBar } from "../common";
+import { SearchBar } from "../common";
 import { SIDEBAR_MENU } from "../../constants";
-import { BellIcon } from "@heroicons/react/24/outline";
 import { userService } from "../../services/userService";
 import type { User } from "../../types";
 
