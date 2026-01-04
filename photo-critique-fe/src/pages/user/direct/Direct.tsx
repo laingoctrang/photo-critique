@@ -16,10 +16,19 @@ export const Direct = () => {
   const loadConversations = async () => {
     try {
       const data = await messageService.getConversations();
-      setConversations(data);
+      
+      // Sort by most recent activity (lastMessage timestamp)
+      const sortedData = [...data].sort((a, b) => {
+        const timeA = a.lastMessage?.sentAt ? new Date(a.lastMessage.sentAt).getTime() : 0;
+        const timeB = b.lastMessage?.sentAt ? new Date(b.lastMessage.sentAt).getTime() : 0;
+        return timeB - timeA; // Most recent first
+      });
+      
+      setConversations(sortedData);
+      
       // Auto-select first conversation if available
-      if (data.length > 0 && !selectedConversation) {
-        setSelectedConversation(data[0]);
+      if (sortedData.length > 0 && !selectedConversation) {
+        setSelectedConversation(sortedData[0]);
       }
     } catch (error: any) {
       showToast(ToastType.ERROR, error?.message || "Failed to load conversations");
@@ -45,7 +54,8 @@ export const Direct = () => {
             // Check if conversation already exists
             const exists = prev.find(c => c.id === newConv.id);
             if (exists) return prev;
-            // Add new conversation at the beginning
+            
+            // Add new conversation at the beginning (most recent)
             return [newConv, ...prev];
           });
           setSelectedConversation(newConv);

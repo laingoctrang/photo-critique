@@ -25,8 +25,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const [searchResults, setSearchResults] = useState<UserListItemResponse[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const conversationsContainerRef = useRef<HTMLDivElement>(null);
-  const scrollPositionRef = useRef<number>(0);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -78,22 +76,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     } catch (error) {
       console.error("Failed to create conversation:", error);
     }
-  };
-
-  const handleSelectConversation = (conversation: ConversationResponse) => {
-    // Save current scroll position before selecting
-    if (conversationsContainerRef.current) {
-      scrollPositionRef.current = conversationsContainerRef.current.scrollTop;
-    }
-    
-    onSelectConversation(conversation);
-    
-    // Restore scroll position after DOM update
-    setTimeout(() => {
-      if (conversationsContainerRef.current) {
-        conversationsContainerRef.current.scrollTop = scrollPositionRef.current;
-      }
-    }, 0);
   };
 
   // Filter conversations locally by fullName or username
@@ -166,10 +148,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       </div>
 
       {/* Conversations List */}
-      <div 
-        ref={conversationsContainerRef}
-        className="flex-1 overflow-y-auto"
-      >
+      <div className="flex-1 overflow-y-auto">
         {filteredConversations.length === 0 ? (
           <div className="flex items-center justify-center h-full p-6">
             <p className="text-gray-500 text-center">
@@ -185,7 +164,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               return (
                 <button
                   key={conversation.id}
-                  onClick={() => handleSelectConversation(conversation)}
+                  onClick={() => onSelectConversation(conversation)}
                   className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${
                     isSelected ? "bg-[#15B8A6]/10 border-l-4 border-[#15B8A6]" : ""
                   }`}
