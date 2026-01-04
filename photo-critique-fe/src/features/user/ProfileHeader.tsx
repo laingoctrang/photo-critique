@@ -192,13 +192,12 @@ export const ProfileStats: React.FC<{
 const LevelBadges: React.FC<{ profile: UserProfileResponse }> = ({ profile }) => {
   const navigate = useNavigate();
   const calculateXPProgress = (): { current: number; max: number; percentage: number } => {
-    if (!profile.level || !profile.xpPoints) {
-      return { current: 0, max: 2000, percentage: 0 };
+    if (!profile.level || !profile.xpPoints || !profile.xpToNextLevel) {
+      return { current: profile.xpPoints ?? 0, max: profile.xpToNextLevel ?? 2000, percentage: 0 };
     }
-    // Assuming each level requires 2000 XP
-    const currentLevelXP = (profile.level - 1) * 2000;
-    const currentXP = profile.xpPoints - currentLevelXP;
-    const maxXP = 200;
+
+    const currentXP = profile.xpPoints;
+    const maxXP = profile.xpToNextLevel + profile.xpPoints;
     const percentage = Math.min((currentXP / maxXP) * 100, 100);
     return { current: currentXP, max: maxXP, percentage };
   };
@@ -215,7 +214,7 @@ const LevelBadges: React.FC<{ profile: UserProfileResponse }> = ({ profile }) =>
             <span className="text-2xl font-bold text-gray-700">Level {profile.level}</span>
           </div>
           <div className="text-base text-gray-500 font-light">
-            {/* {xpProgress.current}/{xpProgress.max} XP */}
+            {xpProgress.current}/{xpProgress.max} XP
           </div>
         </div>
 
