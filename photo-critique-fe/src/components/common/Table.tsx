@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   ChevronUpIcon,
   ChevronDownIcon,
-  FunnelIcon,
   MagnifyingGlassIcon,
   Squares2X2Icon,
   ListBulletIcon,

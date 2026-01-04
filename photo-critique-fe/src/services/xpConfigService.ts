@@ -1,6 +1,8 @@
 import { api } from './api';
 import type { ApiResponse } from './types';
 
+type XPConfigStatus = "PENDING_DEVELOPMENT" | "IN_DEVELOPMENT" | "PENDING_APPROVAL" | "ACTIVE" | "INACTIVE";
+
 export interface XPConfigResponse {
   id: string;
   eventType: string;
@@ -20,7 +22,7 @@ export interface XPConfigRequest {
   points: number;
   description?: string;
   category?: string;
-  status?: "PENDING_DEVELOPMENT" | "IN_DEVELOPMENT" | "PENDING_APPROVAL" | "ACTIVE";
+  status?: XPConfigStatus;
 }
 
 export interface FilterParams {
