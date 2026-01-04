@@ -125,6 +125,10 @@ public class PostServiceImpl implements PostService {
         }
         post.setUpdatedAt(LocalDateTime.now());
 
+        if (!request.getImageUrls().isEmpty()) {
+            post.setImageUrls(request.getImageUrls());
+        }
+
         post = postRepository.save(post);
         return buildPostResponse(post, currentUserId);
     }
@@ -198,7 +202,7 @@ public class PostServiceImpl implements PostService {
             allowedStatuses = List.of(PostStatus.POSTED);
         }
 
-        Page<Post> posts = postRepository.findByUserIdAndStatusInOrderByCreatedAtDesc(
+        Page<Post> posts = postRepository.findByUserIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
                 userId, allowedStatuses, pageable);
         
         // Filter by privacy if needed

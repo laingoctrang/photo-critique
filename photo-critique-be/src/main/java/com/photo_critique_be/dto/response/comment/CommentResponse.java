@@ -19,6 +19,7 @@ public class CommentResponse {
     private String originalImage;
     private String parentCommentId;
     private Boolean isHelpful;
+    private Boolean isDelete;
     private Integer likesCount;
     private Boolean isLiked;
     private List<CommentResponse> replies;

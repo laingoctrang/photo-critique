@@ -55,6 +55,11 @@ export const CommentImage: React.FC<CommentImageProps> = ({
         <img
           src={aiGeneratedImage}
           alt="AI generated image"
+          onError={(e) => {
+            if (e.currentTarget.parentElement) {
+              e.currentTarget.parentElement.style.display = "none";
+            }
+          }}
           className={cn("block object-contain", isLandscape ? "max-w-[200px] h-auto" : "max-w-auto max-h-[150px]", className)}
         />
         

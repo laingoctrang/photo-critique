@@ -13,6 +13,7 @@ import {
   type ImageInfo,
   commentService,
   type CommentResponse,
+  generateService,
 } from "../../services";
 import { CommentImage } from "./CommentImage";
 import { showToast } from "../../utils";
@@ -28,6 +29,9 @@ interface CommentInputProps {
   imageUrls?: ImageInfo[];
   disabled?: boolean;
   onCommentCreated?: (comment: CommentResponse) => void;
+  editingComment?: CommentResponse | null;
+  onCancelEdit?: () => void;
+  onCommentUpdated?: (comment: CommentResponse) => void;
 }
 
 type ModalType = "post-with-image" | null;
@@ -38,6 +42,9 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   imageUrls = [],
   disabled = false,
   onCommentCreated,
+  editingComment = null,
+  onCancelEdit,
+  onCommentUpdated,
 }) => {
   const MAX_COMMENT_LENGTH = 1000;
   const [content, setContent] = useState("");
@@ -45,6 +52,7 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     0
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
     null
   );
@@ -59,6 +67,40 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
   const selectedImage =
     selectedImageIndex !== null ? availableImages[selectedImageIndex] : null;
+
+  // Load editing comment data
+  useEffect(() => {
+    if (editingComment) {
+      // Find and set the original image index
+      if (editingComment.originalImage) {
+        const imageIndex = availableImages.findIndex(
+          (img) => img.url === editingComment.originalImage
+        );
+        
+        if (imageIndex === -1) {
+          showToast(ToastType.WARNING, "The original image for this comment is no longer available (may have been deleted or updated)");
+          return;
+        } else {
+          setContent(editingComment.content);
+          setGeneratedImageUrl(editingComment.aiGeneratedImage || null);
+          setSelectedImageIndex(imageIndex);
+          setIsEditing(true);
+        }
+      } else {
+        setSelectedImageIndex(null);
+        setContent(editingComment.content);
+        setGeneratedImageUrl(editingComment.aiGeneratedImage || null);
+        setIsEditing(true);
+      }
+    } else {
+      // Reset form when not editing
+      setIsEditing(false);
+      if (content === "" && !generatedImageUrl) {
+        setSelectedImageIndex(availableImages.length > 0 ? 0 : null);
+      }
+    }
+    // eslint-disable-next-line
+  }, [editingComment]);
 
   const handlePostClick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,23 +119,47 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   const handlePostSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const newComment = await commentService.createComment({
-        postId,
-        content: content.trim(),
-        originalImage: selectedImage?.url || undefined,
-        aiGeneratedImage: generatedImageUrl || undefined,
-      });
+      if (isEditing && editingComment) {
+        // Update existing comment
+        const updatedComment = await commentService.updateComment(
+          editingComment.id,
+          {
+            content: content.trim(),
+            originalImage: selectedImage?.url || undefined,
+            aiGeneratedImage: generatedImageUrl || undefined,
+          },
+          postId
+        );
 
-      // Clear form after successful submission
-      setContent("");
-      setSelectedImageIndex(0);
-      setGeneratedImageUrl(null);
+        // Clear form after successful update
+        setContent("");
+        setSelectedImageIndex(availableImages.length > 0 ? 0 : null);
+        setGeneratedImageUrl(null);
+        setIsEditing(false);
 
-      // Notify parent component
-      onCommentCreated?.(newComment);
-      showToast(ToastType.SUCCESS, "Comment posted successfully");
+        // Notify parent component
+        onCommentUpdated?.(updatedComment);
+        showToast(ToastType.SUCCESS, "Comment updated successfully");
+      } else {
+        // Create new comment
+        const newComment = await commentService.createComment({
+          postId,
+          content: content.trim(),
+          originalImage: selectedImage?.url || undefined,
+          aiGeneratedImage: generatedImageUrl || undefined,
+        });
+
+        // Clear form after successful submission
+        setContent("");
+        setSelectedImageIndex(availableImages.length > 0 ? 0 : null);
+        setGeneratedImageUrl(null);
+
+        // Notify parent component
+        onCommentCreated?.(newComment);
+        showToast(ToastType.SUCCESS, "Comment posted successfully");
+      }
     } catch (error: any) {
-      showToast(ToastType.ERROR, error.message || "Failed to post comment");
+      showToast(ToastType.ERROR, error.message || (isEditing ? "Failed to update comment" : "Failed to post comment"));
       throw error;
     } finally {
       setIsSubmitting(false);
@@ -114,11 +180,18 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     setGenerationStatus("uploading");
 
     try {
-      const result = await commentService.generateImage(
+      const result = await generateService.generateImage(
         content.trim(),
         selectedImage.url,
-        (status) => {
-          setGenerationStatus(status);
+        (progress: number) => {
+          // Map progress to status
+          if (progress < 50) {
+            setGenerationStatus("uploading");
+          } else if (progress < 100) {
+            setGenerationStatus("editing");
+          } else {
+            setGenerationStatus("done");
+          }
         }
       );
 
@@ -140,11 +213,18 @@ export const CommentInput: React.FC<CommentInputProps> = ({
     setGenerationStatus("uploading");
 
     try {
-      const result = await commentService.generateImage(
+      const result = await generateService.generateImage(
         content.trim(),
         selectedImage.url,
-        (status) => {
-          setGenerationStatus(status);
+        (progress: number) => {
+          // Map progress to status
+          if (progress < 50) {
+            setGenerationStatus("uploading");
+          } else if (progress < 100) {
+            setGenerationStatus("editing");
+          } else {
+            setGenerationStatus("done");
+          }
         }
       );
 
@@ -280,7 +360,25 @@ export const CommentInput: React.FC<CommentInputProps> = ({
 
             {/* Action Buttons - Right aligned */}
             <div className="flex justify-end gap-2">
-              {/* Generate Button - Always show if images are available */}
+              {/* Cancel Button - Show in edit mode */}
+              {isEditing && onCancelEdit && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    onCancelEdit();
+                    setContent("");
+                    setGeneratedImageUrl(null);
+                    setIsEditing(false);
+                  }}
+                  disabled={isSubmitting || isGenerating}
+                  className="shrink-0"
+                >
+                  Cancel
+                </Button>
+              )}
+
+              {/* Generate Button - Always show if images are available and not in error state */}
               {imageUrls.length > 0 && (
                 <Button
                   type="button"
@@ -294,13 +392,13 @@ export const CommentInput: React.FC<CommentInputProps> = ({
                 </Button>
               )}
 
-              {/* Post Button - Always show */}
+              {/* Post/Save Button - Always show */}
               <Button
                 type="submit"
                 disabled={!canPost}
                 isLoading={isSubmitting}
                 className="shrink-0 p-3"
-                leftIcon={PaperAirplaneIcon}
+                leftIcon={isEditing ? CheckIcon : PaperAirplaneIcon}
               ></Button>
             </div>
           </div>

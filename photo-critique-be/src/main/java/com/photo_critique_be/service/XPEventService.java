@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface XPEventService {
     void awardXP(String userId, String eventType, String postId, String commentId);
+    void deductXP(String userId, String eventType, String postId, String commentId);
     Integer getUserTotalXP(String userId);
     List<XPEventResponse> getRecentXPEvents(String userId, int limit);
     Page<XPEventResponse> getAllXPEvents(String userId, Pageable pageable);

@@ -7,5 +7,9 @@ import lombok.Data;
 public class UpdateCommentRequest {
     @NotBlank(message = "Content is required")
     private String content;
+
+    private String aiGeneratedImage;
+
+    private String originalImage;
 }
 

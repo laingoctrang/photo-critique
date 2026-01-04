@@ -1,16 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ExclamationTriangleIcon,
   XMarkIcon,
   ArrowUpIcon,
   ArrowsRightLeftIcon,
-  TrashIcon,
   SparklesIcon,
   ArrowPathIcon,
-  DocumentPlusIcon,
   ArrowDownTrayIcon,
   ClockIcon,
+  PaintBrushIcon,
 } from "@heroicons/react/24/outline";
 import { Button, FileUpload, type FileUploadItemData, ImageCarousel } from "../../../components";
 import { showToast } from "../../../utils";
@@ -30,6 +29,7 @@ export const AIEdit = () => {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  const [textareaHeight, setTextareaHeight] = useState(24); // Default min height
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
@@ -92,8 +92,15 @@ export const AIEdit = () => {
     setFiles([]);
     setOriginalImage(null);
     setAiGeneratedImage(null);
+    uploadService.deleteFile(originalImage?.split("/").pop()?.split(".")[0] || "");
+  };
+
+  const handleReset = () => {
+    setFiles([]);
+    setOriginalImage(null);
+    setAiGeneratedImage(null);
     setPrompt("");
-    uploadService.deleteFile(originalImage?.split("/").pop() || "");
+    uploadService.deleteFile(originalImage?.split("/").pop()?.split(".")[0] || "");
   };
 
   const handleDownloadImage = async () => {
@@ -177,7 +184,7 @@ export const AIEdit = () => {
   };
 
   // Auto-resize textarea with max 5 lines
-  useEffect(() => {
+  useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
@@ -190,6 +197,9 @@ export const AIEdit = () => {
     // Set height based on content, but cap at maxHeight
     const newHeight = Math.min(textarea.scrollHeight, maxHeight);
     textarea.style.height = `${newHeight}px`;
+    
+    // Update textarea height state for FileUpload calculation
+    setTextareaHeight(newHeight);
 
     // Enable scroll if content exceeds max height
     if (textarea.scrollHeight > maxHeight) {
@@ -197,7 +207,7 @@ export const AIEdit = () => {
     } else {
       textarea.style.overflowY = "hidden";
     }
-  }, [prompt]);
+  }, [prompt, viewMode]); // Add viewMode to trigger recalculation when switching views
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (e.target.value.length <= MAX_PROMPT_LENGTH) {
@@ -353,7 +363,10 @@ export const AIEdit = () => {
                   maxFiles={1}
                   acceptedTypes=".jpg,.jpeg,.png,image/jpeg,image/png"
                   maxSize={10 * 1024 * 1024}
-                  className="h-[calc(100vh-285px)] w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
+                  style={{
+                    height: `calc(100vh - ${textareaHeight + 261}px)`
+                  }}
+                  className="h-full w-full rounded-3xl flex flex-col justify-center items-center hover:border-[#15B8A6] hover:bg-[#F0FDFA]"
                   itemClassName="rounded-3xl opacity-0"
                 />
               </div>
@@ -452,7 +465,7 @@ export const AIEdit = () => {
                   size="small"
                   onClick={handleRegenerate}
                   className="text-gray-600 hover:text-gray-900 text-xs"
-                  leftIcon={ArrowPathIcon}
+                  leftIcon={SparklesIcon}
                 >
                   Regenerate
                 </Button>
@@ -478,11 +491,11 @@ export const AIEdit = () => {
                 <Button
                   variant="ghost"
                   size="small"
-                  onClick={handleRemoveImage}
+                  onClick={handleReset}
                   className="text-gray-600 hover:text-gray-900 text-xs"
-                  leftIcon={TrashIcon}
+                  leftIcon={ArrowPathIcon}
                 >
-                  Clear
+                  Reset All
                 </Button>
 
                 {/* Spacer */}
@@ -492,7 +505,7 @@ export const AIEdit = () => {
                   variant="secondary"
                   size="small"
                   onClick={handleCreatePost}
-                  leftIcon={DocumentPlusIcon}
+                  leftIcon={PaintBrushIcon}
                 >
                   Create Post
                 </Button>
@@ -520,8 +533,9 @@ export const AIEdit = () => {
                     ref={textareaRef}
                     className="w-full border-none outline-none resize-none text-sm placeholder-gray-400 text-gray-800"
                     style={{
-                      height: "90px",
+                      minHeight: "24px",
                       lineHeight: "24px",
+                      maxHeight: "120px",
                       overflowY: "auto",
                     }}
                     placeholder="Describe what you want to edit...(max 1000 characters)"
@@ -536,7 +550,7 @@ export const AIEdit = () => {
                       }
                       setIsTextareaFocused(false);
                     }}
-                    disabled={isGenerating || hasViolation}
+                    disabled={isGenerating || isFileUploading || hasViolation}
                     rows={1}
                   />
                   

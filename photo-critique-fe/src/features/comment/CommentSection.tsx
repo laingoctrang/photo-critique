@@ -48,6 +48,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [editingComment, setEditingComment] = useState<CommentResponse | null>(null);
 
   const isPostAuthor = postAuthorId === user?.id;
 
@@ -72,8 +73,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       }
       
       setHasMore(response.content.length === 10);
-      setCommentsCount(response.totalElements);
-      onCommentCountChange?.(response.totalElements);
+      // setCommentsCount(response.totalElements);
+      // onCommentCountChange?.(response.totalElements);
     } catch (error: any) {
       showToast(ToastType.ERROR, error.message || "Failed to load comments");
     } finally {
@@ -182,23 +183,123 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       const comment = comments.find((c) => c.id === commentId);
       if (!comment) return;
 
-      if (comment.isHelpful) {
-        await commentService.unmarkAsHelpful(commentId, postId);
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === commentId ? { ...c, isHelpful: false } : c
-          )
-        );
-      } else {
-        await commentService.markAsHelpful(commentId, postId);
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === commentId ? { ...c, isHelpful: true } : c
-          )
-        );
-      }
+      // Backend now toggles the helpful status
+      await commentService.markAsHelpful(commentId, postId);
+      
+      // Toggle the local state
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId ? { ...c, isHelpful: !c.isHelpful } : c
+        )
+      );
+      
+      showToast(
+        ToastType.SUCCESS, 
+        comment.isHelpful ? "Comment unmarked as helpful" : "Comment marked as helpful"
+      );
     } catch (error: any) {
       showToast(ToastType.ERROR, error.message || "Failed to mark comment");
+    }
+  };
+
+  const handleEditComment = async (commentId: string, content: string, isTopLevel?: boolean) => {
+    // If it's a top-level comment, set it for editing in CommentInput
+    if (isTopLevel) {
+      const comment = comments.find((c) => c.id === commentId);
+      if (comment) {
+        setEditingComment(comment);
+        setReplyingTo(null); // Clear any reply mode
+        return;
+      }
+    }
+
+    // Otherwise, proceed with inline edit (for replies)
+    try {
+      const updatedComment = await commentService.updateComment(
+        commentId,
+        { content },
+        postId
+      );
+      
+      // Update comment in state (recursively for nested replies)
+      const updateCommentInList = (commentsList: CommentResponse[]): CommentResponse[] => {
+        return commentsList.map((c) => {
+          if (c.id === commentId) {
+            return { ...c, content: updatedComment.content, updatedAt: updatedComment.updatedAt };
+          }
+          if (c.replies && c.replies.length > 0) {
+            return { ...c, replies: updateCommentInList(c.replies) };
+          }
+          return c;
+        });
+      };
+
+      setComments((prev) => updateCommentInList(prev));
+      showToast(ToastType.SUCCESS, "Comment updated successfully");
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error.message || "Failed to update comment");
+      throw error;
+    }
+  };
+
+  const handleCommentUpdated = (updatedComment: CommentResponse) => {
+    // Update comment in state
+    const updateCommentInList = (commentsList: CommentResponse[]): CommentResponse[] => {
+      return commentsList.map((c) => {
+        if (c.id === updatedComment.id) {
+          return { ...updatedComment, replies: c.replies };
+        }
+        if (c.replies && c.replies.length > 0) {
+          return { ...c, replies: updateCommentInList(c.replies) };
+        }
+        return c;
+      });
+    };
+
+    setComments((prev) => updateCommentInList(prev));
+    setEditingComment(null);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await commentService.deleteComment(commentId, postId);
+      
+      // Mark comment as deleted in state (recursively for nested replies)
+      const markCommentAsDeleted = (commentsList: CommentResponse[]): CommentResponse[] => {
+        return commentsList.map((c) => {
+          if (c.id === commentId) {
+            // Mark comment as deleted with placeholder data
+            return {
+              ...c,
+              isDelete: true,
+              content: "[Comment has been deleted]",
+              aiGeneratedImage: undefined,
+              originalImage: undefined,
+              likesCount: 0,
+              isHelpful: false,
+              user: c.user ? {
+                ...c.user,
+                id: "",
+                fullName: "Unknown User",
+                username: "unknown",
+                avatarUrl: undefined,
+              } : null,
+            };
+          }
+          if (c.replies && c.replies.length > 0) {
+            return { ...c, replies: markCommentAsDeleted(c.replies) };
+          }
+          return c;
+        });
+      };
+
+      setComments((prev) => markCommentAsDeleted(prev));
+      setCommentsCount((prev) => Math.max(0, prev - 1));
+      onCommentCountChange?.(Math.max(0, commentsCount - 1));
+      showToast(ToastType.SUCCESS, "Comment deleted successfully");
+    } catch (error: any) {
+      showToast(ToastType.ERROR, error.message || "Failed to delete comment");
+      throw error;
     }
   };
 
@@ -262,6 +363,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           postId={postId}
           imageUrls={imageUrls}
           onCommentCreated={handleCommentCreated}
+          editingComment={editingComment}
+          onCancelEdit={() => {
+            setEditingComment(null)
+          }}
+          onCommentUpdated={handleCommentUpdated}
         />
       </div>
 
@@ -283,6 +389,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               onLike={handleLikeComment}
               onReply={handleReply}
               onMarkHelpful={handleMarkHelpful}
+              onEdit={handleEditComment}
+              onDelete={handleDeleteComment}
               isPostAuthor={isPostAuthor}
               showHelpfulButton={isPostAuthor}
               replyingTo={replyingTo}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { PrivacyType, ReactionType, ReportContentType } from "../../types";
-import { Reaction, ContentExpandable, ImageCarousel, ToastType, Button, ReportModal } from "../../components";
+import { Reaction, ContentExpandable, ImageCarousel, ToastType, Button, ReportModal, Modal } from "../../components";
 import { showToast, formatDateTime } from "../../utils";
 import { postService, type PostListItemResponse, type UserPostResponse } from "../../services";
 import {
@@ -35,7 +35,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   isViewDetail = false,
   onPostClick,
   showBackButton = false,
-  onBackButtonClick = () => {},
+  onBackButtonClick = () => { },
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -53,6 +53,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const [showCreateImageModal, setShowCreateImageModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const menuTimeoutRef = useRef<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -243,13 +244,20 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const handleEditPost = () => {
     // TODO: Navigate to edit page
-    showToast(ToastType.INFO, "Edit post functionality coming soon");
+    navigate(`/create?edit=${currentPost.id}`);
+    // showToast(ToastType.INFO, "Edit post functionality coming soon");
     setShowMenu(false);
   };
 
-  const handleDeletePost = () => {
-    // TODO: Implement delete post
-    showToast(ToastType.INFO, "Delete post functionality coming soon");
+  const handleDeletePost = async () => {
+    const result = await postService.softDeletePost(currentPost.id);
+    if (result) {
+      showToast(ToastType.SUCCESS, "Post deleted successfully");
+      setCurrentPost({} as PostListItemResponse);
+      navigate("/");
+    } else {
+      showToast(ToastType.ERROR, result as string);
+    }
     setShowMenu(false);
   };
 
@@ -340,7 +348,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
         {/* Header Right */}
         <div className="flex items-center justify-between">
-          {currentPost.imageUrls && currentPost.imageUrls.length > 0 && (
+          {currentPost.imageUrls && currentPost.imageUrls.length > 0 && currentPost.commentsCount > 0 && (
             <Button
               variant="primary"
               size="medium"
@@ -400,7 +408,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       <span>Edit post</span>
                     </button>
                     <button
-                      onClick={handleDeletePost}
+                      onClick={() => setShowDeleteModal(true)}
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
                     >
                       <TrashIcon className="w-5 h-5 text-red-600" />
@@ -424,16 +432,16 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* Image */}
       {currentPost.imageUrls.length > 0 && imgRatio && (
-        <div className="block px-4 pb-4">
-          <div className="w-full" style={{ aspectRatio: imgRatio }}>
-            <ImageCarousel
-              images={currentPost.imageUrls.map((img) => img.url)}
-              fitMode="contain"
-              showPreview={true}
-            />
+        <div className={`block px-4 ${currentPost.caption ? "" : "pb-4"}`}>
+            <div className="w-full" style={{ aspectRatio: imgRatio }}>
+              <ImageCarousel
+                images={currentPost.imageUrls.map((img) => img.url)}
+                fitMode="contain"
+                showPreview={true}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Caption */}
       {currentPost.caption && (
@@ -514,6 +522,21 @@ export const PostCard: React.FC<PostCardProps> = ({
           // Optionally refresh post data or show confirmation
         }}
       />
+
+      {/* Delete Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Post"
+        message={`Are you sure you want to delete this post?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleDeletePost}
+        variant="danger"
+        showCancel={false}
+      />
     </div>
+
+
   );
 };

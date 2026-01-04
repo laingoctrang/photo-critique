@@ -10,7 +10,7 @@ import {
 import { Button, FileUpload, PreviewModal, type FileUploadItemData } from "../../../components";
 import { postService } from "../../../services/postService";
 import { moderationService } from "../../../services/moderationService";
-import { PrivacyType } from "../../../types/enums";
+import { PostStatus, PrivacyType } from "../../../types/enums";
 import { showToast } from "../../../utils";
 import { ToastType } from "../../../components";
 import type { ImageInfo } from "../../../services/types";
@@ -39,7 +39,7 @@ export const Create = () => {
   }
 
   const [caption, setCaption] = useState("");
-  const MAX_CAPTION_LENGTH = 1000;
+  const MAX_CAPTION_LENGTH = 5000;
   // const [tags, setTags] = useState<string[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyType>(PrivacyType.PUBLIC);
   const [files, setFiles] = useState<FileUploadItemData[]>(fileItem ? [fileItem] : []);
@@ -51,6 +51,8 @@ export const Create = () => {
   const [showCaptionViolationModal, setShowCaptionViolationModal] = useState(false);
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
 
+  const [statusPost, setStatusPost] = useState<PostStatus | undefined>(undefined);
+
   // Load draft post if editing
   useEffect(() => {
     const loadDraftPost = async () => {
@@ -59,13 +61,7 @@ export const Create = () => {
       try {
         setIsLoadingDraft(true);
         const post = await postService.getPostById(editPostId);
-
-        // Check if post is a draft
-        if (post.status !== "DRAFTED") {
-          showToast(ToastType.ERROR, "This post is not a draft");
-          navigate("/create");
-          return;
-        }
+        setStatusPost(post.status);
 
         // Populate form with draft data
         setCaption(post.caption || "");
@@ -79,7 +75,17 @@ export const Create = () => {
           status: "completed" as const,
           progress: 100,
           imageInfo: img,
-          moderationResult: undefined,
+          moderationResult: {
+            image_url: img.url,
+            allowed: true,
+            label: "",
+            confidence: 0,
+            probabilities: {
+              safe: 0,
+              sexy: 0,
+              violence: 0,
+            },
+          },
         }));
         setFiles(draftFiles);
       } catch (error: unknown) {
@@ -214,7 +220,8 @@ export const Create = () => {
           // tags: tags.length > 0 ? tags : undefined,
           status: "POSTED",
         });
-        showToast(ToastType.SUCCESS, response.message || "Post published successfully!");
+        
+        showToast(ToastType.SUCCESS, response.message || statusPost === PostStatus.POSTED ? "Post updated successfully!" : "Post published successfully!");
         navigate(`/post/${response.id}`);
       } else {
         // Create new post
@@ -367,15 +374,29 @@ export const Create = () => {
 
             {/* Action Buttons - Fixed at bottom */}
             <div className="flex gap-3 mt-auto flex-shrink-0 border-t border-gray-200 pt-4">
+              {statusPost !== PostStatus.POSTED && (
               <Button
                 variant="outline"
                 onClick={() => handleSubmit(true)}
-                disabled={isSubmitting || isSavingDraft || files.length === 0}
+                disabled={isSubmitting || isSavingDraft || files.length === 0 ||  files.some((f) => f.status === "uploading") ||
+                  files.some(
+                    (f) =>
+                      f.status === "completed" &&
+                      f.imageInfo?.contentType?.startsWith("image/") &&
+                      !f.moderationResult
+                  ) ||
+                  files.some(
+                    (f) =>
+                      f.status === "completed" &&
+                      f.moderationResult &&
+                      !f.moderationResult.allowed
+                  )}
                 isLoading={isSavingDraft}
                 fullWidth
               >
                 Save as Draft
               </Button>
+              )}
               <Button
                 variant="primary"
                 onClick={() => handleSubmit(false)}
@@ -387,7 +408,6 @@ export const Create = () => {
                   files.some(
                     (f) =>
                       f.status === "completed" &&
-                      f.imageInfo?.contentType?.startsWith("image/") &&
                       !f.moderationResult
                   ) ||
                   files.some(
@@ -400,7 +420,7 @@ export const Create = () => {
                 isLoading={isSubmitting}
                 fullWidth
               >
-                Publish Post
+                {!editPostId ? "Publish Post" : statusPost === PostStatus.POSTED ? "Update Post" : "Publish Post"}
               </Button>
             </div>
           </div>

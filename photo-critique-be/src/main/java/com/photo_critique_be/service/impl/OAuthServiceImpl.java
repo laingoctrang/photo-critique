@@ -107,7 +107,34 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     @Override
-    public String handleOAuthCallback(String provider, String code, String state) {
+    public String handleOAuthCallback(String provider, String code, String state, String error, String errorDescription, String errorReason) {
+        // Check if OAuth provider returned an error (user cancelled or denied access)
+        if (error != null && !error.isEmpty()) {
+            log.warn("OAuth error from provider {}: error={}, errorDescription={}, errorReason={}", 
+                    provider, error, errorDescription, errorReason);
+            
+            // Handle user cancellation/denial
+            if ("access_denied".equals(error) || "user_denied".equals(errorReason)) {
+                String message = languageService.getMessage(MessageCode.AUTH_OAUTH_CANCELLED);
+                String encodedMessage = URLEncoder.encode(message, StandardCharsets.UTF_8);
+                return String.format("%s/oauth/callback?error=%s", frontendUrl, encodedMessage);
+            }
+            
+            // Handle other OAuth errors
+            String errorMsg = errorDescription != null && !errorDescription.isEmpty() 
+                    ? errorDescription 
+                    : "OAuth authentication was cancelled or denied";
+            String encodedErrorMsg = URLEncoder.encode(errorMsg, StandardCharsets.UTF_8);
+            return String.format("%s/oauth/callback?error=%s", frontendUrl, encodedErrorMsg);
+        }
+        
+        // If no error but also no code, something went wrong
+        if (code == null || code.isEmpty()) {
+            log.error("OAuth callback for provider {} missing both code and error parameters", provider);
+            String errorMsg = URLEncoder.encode("OAuth authentication failed: missing authorization code", StandardCharsets.UTF_8);
+            return String.format("%s/oauth/callback?error=%s", frontendUrl, errorMsg);
+        }
+        
         try {
             // Exchange authorization code for access token
             String accessToken = exchangeCodeForToken(provider, code);

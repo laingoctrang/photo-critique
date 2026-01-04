@@ -8,16 +8,19 @@ import com.photo_critique_be.dto.response.comment.CommentResponse;
 import com.photo_critique_be.dto.response.user.UserPostResponse;
 import com.photo_critique_be.enums.MessageCode;
 import com.photo_critique_be.enums.NotificationType;
+import com.photo_critique_be.enums.ReactionTargetType;
+import com.photo_critique_be.enums.ReactionType;
 import com.photo_critique_be.exception.AuthorizationException;
-import com.photo_critique_be.exception.ConflictException;
 import com.photo_critique_be.exception.ResourceNotFoundException;
 import com.photo_critique_be.exception.ValidationException;
 import com.photo_critique_be.mapper.UserMapper;
 import com.photo_critique_be.model.Comment;
 import com.photo_critique_be.model.Post;
+import com.photo_critique_be.model.Reaction;
 import com.photo_critique_be.model.User;
 import com.photo_critique_be.repository.CommentRepository;
 import com.photo_critique_be.repository.PostRepository;
+import com.photo_critique_be.repository.ReactionRepository;
 import com.photo_critique_be.repository.UserRepository;
 import com.photo_critique_be.service.*;
 import com.photo_critique_be.util.SecurityUtil;
@@ -42,6 +45,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final ReactionRepository reactionRepository;
     private final FollowService followService;
     private final NotificationService notificationService;
     private final LanguageService languageService;
@@ -144,6 +148,8 @@ public class CommentServiceImpl implements CommentService {
         }
 
         comment.setContent(request.getContent());
+        comment.setAiGeneratedImage(request.getAiGeneratedImage());
+        comment.setOriginalImage(request.getOriginalImage());
         comment.setUpdatedAt(LocalDateTime.now());
         comment = commentRepository.save(comment);
 
@@ -163,18 +169,63 @@ public class CommentServiceImpl implements CommentService {
                     languageService.getMessage(MessageCode.COMMENT_DELETE_UNAUTHORIZED));
         }
 
+        // Check if comment has replies (not deleted ones)
+        List<Comment> replies = commentRepository.findByParentCommentIdAndIsDeleteFalse(commentId);
+        
+        if (comment.getIsHelpful()) {
+            xpEventService.deductXP(comment.getUserId(), XPEventConstant.COMMENT_HELPFUL, "", commentId);
+        }
+
+        if (!replies.isEmpty()) {
+            // Soft delete: has replies, only mark as deleted
+            comment.setIsDelete(true);
+            comment.setContent("[Comment has been deleted]");
+            comment.setAiGeneratedImage(null);
+            comment.setOriginalImage(null);
+            comment.setLikesCount(0);
+            comment.setIsHelpful(false);
+            comment.setUserId(null);
+            comment.setUpdatedAt(LocalDateTime.now());
+            commentRepository.save(comment);
+        } else {
+            // Hard delete: no replies, delete completely
+            commentRepository.delete(comment);
+            
+            // Cascade delete: Check if parent comment should be deleted
+            if (comment.getParentCommentId() != null) {
+                cascadeDeleteParentIfNeeded(comment.getParentCommentId());
+            }
+        }
+
         // Update post comments count
         Post post = postRepository.findById(comment.getPostId()).orElse(null);
         if (post != null) {
             post.setCommentsCount(Math.max(0, post.getCommentsCount() - 1));
             postRepository.save(post);
         }
-
-        // Delete replies if any
-        List<Comment> replies = commentRepository.findByParentCommentId(commentId);
-        commentRepository.deleteAll(replies);
-
-        commentRepository.delete(comment);
+    }
+    
+    /**
+     * Cascade delete parent comment if it's soft-deleted and has no more replies
+     */
+    private void cascadeDeleteParentIfNeeded(String parentCommentId) {
+        Comment parentComment = commentRepository.findById(parentCommentId).orElse(null);
+        
+        if (parentComment != null && parentComment.getIsDelete()) {
+            // Check if parent has any remaining replies
+            List<Comment> remainingReplies = commentRepository.findByParentCommentIdAndIsDeleteFalse(parentCommentId);
+            
+            if (remainingReplies.isEmpty()) {
+                // No more replies, hard delete the parent
+                commentRepository.delete(parentComment);
+                log.info("Cascade deleted parent comment {} (was soft-deleted with no remaining replies)", parentCommentId);
+                
+                // Continue cascade if this parent also has a parent
+                if (parentComment.getParentCommentId() != null) {
+                    cascadeDeleteParentIfNeeded(parentComment.getParentCommentId());
+                }
+            }
+        }
     }
 
     @Override
@@ -189,17 +240,29 @@ public class CommentServiceImpl implements CommentService {
         List<CommentResponse> responses = topLevelComments.getContent().stream()
                 .map(comment -> {
                     CommentResponse response = buildCommentResponse(comment, currentUserId);
-                    // Get replies
-                    List<Comment> replies = commentRepository.findByParentCommentId(comment.getId());
-                    List<CommentResponse> replyResponses = replies.stream()
-                            .map(reply -> buildCommentResponse(reply, currentUserId))
-                            .collect(Collectors.toList());
-                    response.setReplies(replyResponses);
+                    // Load all replies recursively
+                    loadRepliesRecursively(response, currentUserId);
                     return response;
                 })
                 .collect(Collectors.toList());
 
         return new PageImpl<>(responses, pageable, topLevelComments.getTotalElements());
+    }
+
+    /**
+     * Recursively load all replies for a comment at all nested levels
+     */
+    private void loadRepliesRecursively(CommentResponse comment, String currentUserId) {
+        List<Comment> replies = commentRepository.findByParentCommentId(comment.getId());
+        List<CommentResponse> replyResponses = replies.stream()
+                .map(reply -> {
+                    CommentResponse replyResponse = buildCommentResponse(reply, currentUserId);
+                    // Recursively load replies for this reply
+                    loadRepliesRecursively(replyResponse, currentUserId);
+                    return replyResponse;
+                })
+                .collect(Collectors.toList());
+        comment.setReplies(replyResponses);
     }
 
     @Override
@@ -208,19 +271,15 @@ public class CommentServiceImpl implements CommentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.POST_NOT_FOUND)));
 
-        // Get top-level comments (no parent) filtered by original_image
-        Page<Comment> topLevelComments = commentRepository.findByPostIdAndOriginalImageAndParentCommentIdIsNullOrderByCreatedAtDesc(
+        // Get top-level comments (no parent) filtered by original_image - exclude deleted ones
+        Page<Comment> topLevelComments = commentRepository.findByPostIdAndOriginalImageAndParentCommentIdIsNullAndIsDeleteFalseOrderByCreatedAtDesc(
                 postId, originalImage, pageable);
 
         List<CommentResponse> responses = topLevelComments.getContent().stream()
                 .map(comment -> {
                     CommentResponse response = buildCommentResponse(comment, currentUserId);
-                    // Get replies
-                    List<Comment> replies = commentRepository.findByParentCommentId(comment.getId());
-                    List<CommentResponse> replyResponses = replies.stream()
-                            .map(reply -> buildCommentResponse(reply, currentUserId))
-                            .collect(Collectors.toList());
-                    response.setReplies(replyResponses);
+                    // Load all replies recursively - include all (deleted replies will be shown with special UI)
+                    loadRepliesRecursively(response, currentUserId);
                     return response;
                 })
                 .collect(Collectors.toList());
@@ -246,29 +305,35 @@ public class CommentServiceImpl implements CommentService {
                     languageService.getMessage(MessageCode.COMMENT_MARK_HELPFUL_UNAUTHORIZED));
         }
 
+        // Toggle helpful status
         if (comment.getIsHelpful()) {
-            throw new ConflictException(
-                    languageService.getMessage(MessageCode.COMMENT_ALREADY_HELPFUL));
-        }
+            // Unmark as helpful
+            comment.setIsHelpful(false);
+            commentRepository.save(comment);
+            
+            // Deduct XP from comment author
+            xpEventService.deductXP(comment.getUserId(), XPEventConstant.COMMENT_HELPFUL, "", commentId);
+        } else {
+            // Mark as helpful
+            comment.setIsHelpful(true);
+            commentRepository.save(comment);
 
-        comment.setIsHelpful(true);
-        commentRepository.save(comment);
+            // Award XP to comment author
+            xpEventService.awardXP(comment.getUserId(), XPEventConstant.COMMENT_HELPFUL, null, commentId);
 
-        // Award XP to comment author
-        xpEventService.awardXP(comment.getUserId(), XPEventConstant.COMMENT_HELPFUL, comment.getPostId(), commentId);
-
-        // Notify comment author
-        User postOwner = userRepository.findById(currentUserId).orElse(null);
-        if (postOwner != null) {
-            String message = String.format("%s marked your comment as helpful", postOwner.getUsername());
-            notificationService.createNotification(
-                    comment.getUserId(),
-                    NotificationType.COMMENT,
-                    currentUserId,
-                    comment.getPostId(),
-                    commentId,
-                    message
-            );
+            // Notify comment author (marked)
+            User postOwner = userRepository.findById(currentUserId).orElse(null);
+            if (postOwner != null) {
+                String message = String.format("%s marked your comment as helpful", postOwner.getUsername());
+                notificationService.createNotification(
+                        comment.getUserId(),
+                        NotificationType.COMMENT,
+                        currentUserId,
+                        comment.getPostId(),
+                        commentId,
+                        message
+                );
+            }
         }
     }
 
@@ -280,9 +345,20 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         languageService.getMessage(MessageCode.COMMENT_NOT_FOUND)));
 
+        Reaction reaction = new Reaction();
+        reaction.setUserId(currentUserId);
+        reaction.setTargetId(commentId);
+        reaction.setTargetType(ReactionTargetType.COMMENT);
+        reaction.setReactionType(ReactionType.LIKE);
+        reactionRepository.save(reaction);
+
         // Increase likes count
         comment.setLikesCount(comment.getLikesCount() + 1);
         commentRepository.save(comment);
+
+        if (!currentUserId.equals(comment.getUserId())) {
+            xpEventService.awardXP(comment.getUserId(), XPEventConstant.COMMENT_LIKED, null, commentId);
+        }
     }
 
     @Override
@@ -293,22 +369,47 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         languageService.getMessage(MessageCode.COMMENT_NOT_FOUND)));
 
+        Reaction reaction = reactionRepository.findByUserIdAndTargetIdAndTargetType(currentUserId, commentId, ReactionTargetType.COMMENT)
+                .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.REACTION_NOT_FOUND)));
+        reactionRepository.delete(reaction);
+
         if (comment.getLikesCount() > 0) {
             comment.setLikesCount(comment.getLikesCount() - 1);
             commentRepository.save(comment);
+        }
+
+        if (!currentUserId.equals(comment.getUserId())) {
+            xpEventService.deductXP(comment.getUserId(), XPEventConstant.COMMENT_LIKED, "", commentId);
         }
     }
 
     // Helper methods
 
     private CommentResponse buildCommentResponse(Comment comment, String currentUserId) {
-        User commentUser = userService.getUserById(comment.getUserId());
+        User commentUser = null;
+        if (!comment.getIsDelete()) {
+            commentUser = userService.getUserById(comment.getUserId());
+        }
 
-        FollowInfo followInfo = followService.resolveFollowInfo(comment.getUserId(), currentUserId);
-        UserPostResponse userResponse = userMapper.toUserPostResponse(commentUser, followInfo);
+        FollowInfo followInfo = null;
+        if (commentUser != null) {
+            followInfo = followService.resolveFollowInfo(commentUser.getId(), currentUserId);
+        }
+        
+        UserPostResponse userResponse = null;
+        if (commentUser != null) {
+            userResponse = userMapper.toUserPostResponse(commentUser, followInfo);
+        }
 
-        // Track individual likes
+        // Check if current user liked this comment
         boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = reactionRepository.findByUserIdAndTargetIdAndTargetType(
+                    currentUserId, 
+                    comment.getId(), 
+                    ReactionTargetType.COMMENT
+            ).isPresent();
+        }
 
         return CommentResponse.builder()
                 .id(comment.getId())
@@ -319,6 +420,7 @@ public class CommentServiceImpl implements CommentService {
                 .originalImage(comment.getOriginalImage())
                 .parentCommentId(comment.getParentCommentId())
                 .isHelpful(comment.getIsHelpful())
+                .isDelete(comment.getIsDelete() != null ? comment.getIsDelete() : false)
                 .likesCount(comment.getLikesCount())
                 .isLiked(isLiked)
                 .replies(new ArrayList<>())

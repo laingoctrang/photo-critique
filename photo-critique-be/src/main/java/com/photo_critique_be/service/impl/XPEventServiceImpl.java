@@ -78,6 +78,57 @@ public class XPEventServiceImpl implements XPEventService {
         }
     }
 
+    @Transactional
+    @Override
+    public void deductXP(String userId, String eventType, String postId, String commentId) {
+        try {
+            // Find the XP event
+            XPEvent xpEvent = null;
+            if (!commentId.isEmpty()) {
+                xpEvent = xpEventRepository.findByUserIdAndEventTypeAndRelatedCommentId(userId, eventType, commentId);
+            }
+
+            if (!postId.isEmpty()) {
+                xpEvent = xpEventRepository.findByUserIdAndEventTypeAndRelatedPostId(userId, eventType, postId);
+            }
+            
+            if (xpEvent == null) {
+                log.warn("No XP event found for user {} with eventType {} and commentId/postId {}", userId, eventType, commentId.isEmpty() ? postId : commentId);
+                return;
+            }
+
+            int points = xpEvent.getPoints();
+
+            // Delete the XP event
+            xpEventRepository.delete(xpEvent);
+
+            // Update user's total XP and level
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.USER_NOT_FOUND)));
+
+            int newXp = Math.max(0, user.getXpPoints() - points);
+            int oldLevel = user.getLevel() != null ? user.getLevel() : 1;
+            
+            user.setXpPoints(newXp);
+            int newLevel = calculateLevel(newXp);
+            user.setLevel(newLevel);
+            user.setXpToNextLevel(calculateXpToNextLevel(newXp, newLevel));
+            
+            // Log level down if level changed
+            if (newLevel < oldLevel) {
+                log.info("User {} leveled down from {} to {}", userId, oldLevel, newLevel);
+            }
+            
+            userRepository.save(user);
+
+            log.info("Deducted {} XP from user {} for {}", points, userId, eventType);
+
+        } catch (Exception e) {
+            log.error("Failed to deduct XP from user {} for {}: {}", userId, eventType, e.getMessage());
+            throw new RuntimeException("Failed to deduct XP", e);
+        }
+    }
+
     public Integer getUserTotalXP(String userId) {
         return 0;
 //        return xpEventRepository.sumPointsByUserId(userId).intValue();

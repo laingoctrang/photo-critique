@@ -183,6 +183,7 @@ interface FileUploadProps {
   variant?: "default" | "compact" | "icon" | "square"; // UI variant
   className?: string; // className for drop zone
   itemClassName?: string; // className for file items
+  style?: React.CSSProperties; // style for drop zone
 }
 
 
@@ -198,6 +199,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   variant = "default",
   className,
   itemClassName,
+  style,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<FileUploadItemData[]>(files);
@@ -470,6 +472,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             onDrop={handleDrop}
             onClick={handleBrowseClick}
             title="Upload file"
+            style={style}
           >
             <PhotoIcon className="w-5 h-5 text-gray-400" />
             <input
@@ -492,6 +495,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             onDrop={handleDrop}
             onClick={handleBrowseClick}
             title="Upload file"
+            style={style}
           >
             <PhotoIcon className="w-6 h-6 text-gray-400" />
             <input
@@ -514,6 +518,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             onDrop={handleDrop}
             onClick={handleBrowseClick}
             title="Upload file"
+            style={style}
           >
             <CloudArrowUpIcon className="w-6 h-6 text-gray-400 mr-2" />
             <span className="text-sm text-gray-600">Upload</span>
@@ -536,6 +541,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          style={style}
         >
           <CloudArrowUpIcon className="w-12 h-12 text-[#15B8A6] mx-auto mb-4 bg-[#15B8A6]/10 rounded-full p-2" />
           <p className="text-lg font-bold text-gray-600 text-center mb-2">

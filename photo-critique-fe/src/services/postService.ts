@@ -114,4 +114,8 @@ export const postService = {
         return response.data.success ? true : response.data.message;
     },
 
+    softDeletePost: async (postId: string): Promise<void | string> => {
+        const response = await api.delete(`/posts/${postId}`);
+        return response.data.message || 'Post deleted successfully';
+    },
 };

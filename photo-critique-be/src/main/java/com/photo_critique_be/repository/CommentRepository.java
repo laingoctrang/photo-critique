@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface CommentRepository extends MongoRepository<Comment, String> {
+    // Original methods for backward compatibility
     Page<Comment> findByPostIdAndParentCommentIdIsNullOrderByCreatedAtDesc(String postId, Pageable pageable);
     Page<Comment> findByPostIdOrderByCreatedAtDesc(String postId, Pageable pageable);
     List<Comment> findByParentCommentIdOrderByCreatedAtAsc(String parentCommentId);
@@ -25,5 +26,14 @@ public interface CommentRepository extends MongoRepository<Comment, String> {
         String originalImage, 
         Pageable pageable
     );
+    
+    // New methods with isDelete filter
+    Page<Comment> findByPostIdAndParentCommentIdIsNullAndIsDeleteFalseOrderByCreatedAtDesc(String postId, Pageable pageable);
+    Page<Comment> findByPostIdAndOriginalImageAndParentCommentIdIsNullAndIsDeleteFalseOrderByCreatedAtDesc(
+        String postId, 
+        String originalImage, 
+        Pageable pageable
+    );
+    List<Comment> findByParentCommentIdAndIsDeleteFalse(String parentCommentId);
 }
 

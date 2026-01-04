@@ -123,13 +123,20 @@ public class CloudinaryService {
     public void deleteFile(String publicId) throws IOException {
         log.info("Deleting file with publicId: {}", publicId);
 
-        Map<String, Object> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-
-        if (!"ok".equals(result.get("result"))) {
-            throw new RuntimeException("Failed to delete file: " + publicId);
+        // If publicId doesn't contain folder, add it
+        String fullPublicId = publicId;
+        if (!publicId.contains("/")) {
+            fullPublicId = "photocritique/" + publicId;
         }
 
-        log.info("File deleted successfully: {}", publicId);
+        Map<String, Object> result = cloudinary.uploader().destroy(fullPublicId, ObjectUtils.emptyMap());
+
+        if (!"ok".equals(result.get("result"))) {
+            log.error("Failed to delete file: {} - Result: {}", fullPublicId, result);
+            throw new RuntimeException("Failed to delete file: " + fullPublicId);
+        }
+
+        log.info("File deleted successfully: {}", fullPublicId);
     }
 
     /**

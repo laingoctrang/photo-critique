@@ -37,18 +37,24 @@ public class OAuthController {
      * Handle OAuth callback via GET
      * All logic is handled in service layer
      * @param provider OAuth provider (google, facebook)
-     * @param code Authorization code
+     * @param code Authorization code (optional if error is present)
      * @param state Optional state parameter
-     * @return Redirect to frontend with token and message
+     * @param error Error code from OAuth provider (e.g., access_denied)
+     * @param errorDescription Optional error description
+     * @param errorReason Optional error reason
+     * @return Redirect to frontend with token and message, or error message
      */
     @GetMapping("/callback/{provider}")
     public ResponseEntity<?> handleCallback(
             @PathVariable String provider,
-            @RequestParam String code,
-            @RequestParam(required = false) String state) {
-        String redirectUrl = oAuthService.handleOAuthCallback(provider, code, state);
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .header("Location", redirectUrl)
-                    .build();
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String error,
+            @RequestParam(required = false) String errorDescription,
+            @RequestParam(required = false) String errorReason) {
+        String redirectUrl = oAuthService.handleOAuthCallback(provider, code, state, error, errorDescription, errorReason);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header("Location", redirectUrl)
+                .build();
     }
 }

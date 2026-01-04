@@ -134,7 +134,7 @@ export const Reaction: React.FC<ReactionProps> = ({
             if (userReaction) {
               handleReactionSelect(userReaction);
             } else {
-              handleReactionSelect(ReactionType.LIKE);
+              handleReactionSelect(ReactionType.LOVE);
             }
           }}
           disabled={disabled}

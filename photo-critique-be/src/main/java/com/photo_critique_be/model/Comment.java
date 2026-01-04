@@ -54,6 +54,9 @@ public class Comment {
     @Field("is_helpful")
     private Boolean isHelpful = false;
 
+    @Field("is_delete")
+    private Boolean isDelete = false;
+
     @Field("likes_count")
     private Integer likesCount = 0;
 

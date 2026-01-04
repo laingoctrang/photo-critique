@@ -35,7 +35,7 @@ export const ReactionSelector: React.FC<ReactionSelectorProps> = ({
   };
 
   return (
-    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
+    <div className="absolute bottom-full left-1/2 transform -translate-x-1/10 mb-2 z-50">
       <div className="bg-white rounded-full shadow-lg border border-gray-200 p-2 flex items-center gap-1 relative z-50">
         {reactions.map((reaction) => (
           <button

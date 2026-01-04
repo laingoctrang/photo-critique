@@ -36,7 +36,7 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.created(imageInfo, languageService.getMessage(MessageCode.FILE_UPLOAD_SUCCESS)));
     }
 
-    @DeleteMapping("/delete")
+    @PostMapping("/delete")
     public ResponseEntity<ApiResponse<Void>> deleteFile(
             @RequestParam("publicId") String publicId) throws IOException {
         fileUploadService.deleteFile(publicId);

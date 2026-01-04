@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, SparklesIcon, CheckIcon, ArrowPathIcon, ArrowsRightLeftIcon, ArrowDownTrayIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, SparklesIcon, CheckIcon, ArrowPathIcon, ArrowsRightLeftIcon, ArrowDownTrayIcon, PlusIcon, DocumentTextIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Button, Loading, ToastType } from "../../components";
 import { showToast } from "../../utils";
 import { commentService, generateService, imageGenerationHistoryService, type CommentResponse, type ImageInfo } from "../../services";
@@ -31,7 +31,11 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [imgRatio, setImgRatio] = useState<number | null>(null);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState<string>("");
+  const [isPromptEdited, setIsPromptEdited] = useState(false);
   const cancelTokenRef = useRef<{ cancelled: boolean } | null>(null);
+  const MAX_PROMPT_LENGTH = 1000;
 
   // Filter only images
   const availableImages = imageUrls.filter((img) => img.contentType?.startsWith("image/"));
@@ -130,6 +134,8 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
     pageRef.current = 0;
     setComments([]);
     setGeneratedImageUrl(null);
+    setIsPromptEdited(false);
+    setEditedPrompt("");
   };
 
   const handleCommentSelect = (commentId: string) => {
@@ -145,6 +151,21 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
     });
   };
 
+  const handleOpenPromptModal = () => {
+    setEditedPrompt(getCombinedPrompt());
+    setShowPromptModal(true);
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedPrompt(e.target.value);
+    setIsPromptEdited(true);
+  };
+
+  const handleGenerateFromModal = async () => {
+    setShowPromptModal(false);
+    await handleGenerateEdits();
+  };
+
   const handleSelectAll = () => {
     if (isGenerating) return;
     if (selectedCommentIds.size === comments.length) {
@@ -157,10 +178,14 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
   const handleReset = () => {
     setSelectedCommentIds(new Set());
     setGeneratedImageUrl(null);
+    setIsPromptEdited(false);
+    setEditedPrompt("");
   };
 
   const handleRegenerate = () => {
     setGeneratedImageUrl(null);
+    setIsPromptEdited(false);
+    setEditedPrompt("");
   };
 
   const handleCancelGenerate = () => {
@@ -216,6 +241,24 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
     }
   };
 
+  const getDefaultPrompt = () => {
+    const selectedComments = comments.filter((c) => selectedCommentIds.has(c.id));
+    return selectedComments.map((c) => c.content).join(". ");
+  };
+
+  const getCombinedPrompt = () => {
+    return isPromptEdited ? editedPrompt : getDefaultPrompt();
+  };
+
+  // Reset edited prompt when selection changes
+  useEffect(() => {
+    if (isPromptEdited) {
+      setIsPromptEdited(false);
+      setEditedPrompt("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCommentIds]);
+
   const handleGenerateEdits = async () => {
     if (selectedCommentIds.size === 0 || !selectedImageUrl) {
       showToast(ToastType.ERROR, "Please select at least one comment");
@@ -227,12 +270,10 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
     setIsGenerating(true);
 
     try {
-      // Combine selected comments into a prompt
-      const selectedComments = comments.filter((c) => selectedCommentIds.has(c.id));
-      const combinedPrompt = selectedComments.map((c) => c.content).join(". ");
-
+      const finalPrompt = getCombinedPrompt();
+      // Use edited prompt or combined prompt
       const result = await generateService.generateImage(
-        combinedPrompt,
+        finalPrompt,
         selectedImageUrl
       );
 
@@ -243,7 +284,7 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
         imageGenerationHistoryService.create({
           inputImageUrl: selectedImageUrl,
           outImageUrl: result.imageUrl,
-          prompt: combinedPrompt,
+          prompt: finalPrompt,
         });
       }
     } catch (error: unknown) {
@@ -349,7 +390,7 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
                       size="small"
                       onClick={handleRegenerate}
                       className="text-gray-600 hover:text-gray-900 text-xs"
-                      leftIcon={ArrowPathIcon}
+                      leftIcon={SparklesIcon}
                     >
                       Regenerate
                     </Button>
@@ -369,9 +410,9 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
                       size="small"
                       onClick={handleReset}
                       className="text-gray-600 hover:text-gray-900 text-xs"
-                      leftIcon={TrashIcon}
+                      leftIcon={ArrowPathIcon}
                     >
-                      Reset
+                      Reset All
                     </Button>
                     <div className="flex-1"></div>
                     <Button
@@ -476,6 +517,21 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
                   </button>
                 )}
               </div>
+              
+              {/* View Prompt Button */}
+              {selectedCommentIds.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onClick={handleOpenPromptModal}
+                  disabled={isGenerating}
+                  leftIcon={DocumentTextIcon}
+                  className="w-full border border-gray-300 hover:bg-gray-50"
+                >
+                  View Prompt ({getCombinedPrompt().length}/{MAX_PROMPT_LENGTH})
+                </Button>
+              )}
+              
               <Button
                 variant="primary"
                 onClick={handleGenerateEdits}
@@ -557,6 +613,85 @@ export const CreateImageFromCommentsModal: React.FC<CreateImageFromCommentsModal
                   className="max-w-full max-h-[40vh] md:max-h-[85vh] object-contain rounded-lg"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Preview Modal */}
+      {showPromptModal && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowPromptModal(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <DocumentTextIcon className="w-5 h-5 text-gray-700" />
+                <h3 className="text-lg font-semibold text-gray-900">Edit Prompt</h3>
+              </div>
+              <button
+                onClick={() => setShowPromptModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5 text-gray-700" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-3">
+                {/* Character Count */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">
+                    {selectedCommentIds.size} comment{selectedCommentIds.size !== 1 ? "s" : ""} combined
+                  </span>
+                  <span className={`font-medium ${editedPrompt.length > MAX_PROMPT_LENGTH ? "text-orange-600" : "text-gray-700"}`}>
+                    {editedPrompt.length} / {MAX_PROMPT_LENGTH} characters
+                  </span>
+                </div>
+
+                {/* Warning if too long */}
+                {editedPrompt.length > MAX_PROMPT_LENGTH && (
+                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
+                    <ExclamationTriangleIcon className="w-8 h-8 text-orange-700" />
+                    <p className="text-sm text-orange-700">
+                    The prompt is too long, which may lead to inaccurate results. Please shorten it or deselect some comments to achieve better results.
+                    </p>
+                  </div>
+                )}
+
+                {/* Editable Prompt */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Prompt Content
+                  </label>
+                  <textarea
+                    value={editedPrompt}
+                    onChange={handlePromptChange}
+                    className="w-full min-h-[200px] mt-1 px-3 py-2 border border-gray-300 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#15B8A6] focus:border-transparent text-sm text-gray-800"
+                    placeholder="No comments selected"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200">
+              <Button
+                variant="primary"
+                onClick={handleGenerateFromModal}
+                disabled={!editedPrompt.trim() || isGenerating || !!generatedImageUrl}
+                isLoading={isGenerating}
+                leftIcon={SparklesIcon}
+                className="w-full"
+              >
+                {editedPrompt.length > MAX_PROMPT_LENGTH ? "Generate Anyway" : "Generate Edits"}
+              </Button>
             </div>
           </div>
         </div>

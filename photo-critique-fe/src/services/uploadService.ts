@@ -77,9 +77,11 @@ export const uploadService = {
   },
 
   deleteFile: async (publicId: string): Promise<void> => {
-    await api.delete<ApiResponse<void>>('/files/delete', {
-      params: { publicId },
-    });
-  },
+    await api.post<ApiResponse<void>>(
+      '/files/delete',
+      null,
+      { params: { publicId } }
+    );
+  }
 };
 
