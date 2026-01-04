@@ -32,6 +32,17 @@ export const Create = () => {
         size: Number(searchParams.get("size") || 0),
         contentType: "image/" + (initialFiles.split(".").pop() || "jpg"),
       },
+      moderationResult: {
+        image_url: initialFiles,
+        allowed: true,
+        label: "",
+        confidence: 0,
+        probabilities: {
+          safe: 0,
+          sexy: 0,
+          violence: 0,
+        },
+      },
       title: initialFiles.split("/").pop() || "",
       progress: 100,
       status: "completed",
