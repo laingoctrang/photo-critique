@@ -11,5 +11,7 @@ export { userService, type UserProfileResponse, type BadgeEarnedResponse, type U
 export { rankingService, type RankingPeriod, type RankingType, type UserRankingResponse, type PostRankingResponse, type RankingResponse } from './rankingService';
 export { imageGenerationHistoryService, type CreateImageGenerationHistoryRequest, type ImageGenerationHistoryResponse } from './imageGenerationHistoryService';
 export { generateService } from './generateService';
-export { uploadService } from './uploadService';
+export { uploadService } from './uploadService';    
+export { statisticsService, type StatisticsResponse, type StatisticsPeriod, type OverviewStatistics, type TimeSeriesData, type ActivityStatistics } from './statisticsService';
+export { adminStatisticsService, type OverviewStatisticsResponse, type ActivityChartResponse, type UserEngagementResponse, type ChartPeriod } from './adminStatisticsService';
 export { reportService, type ReportResponse, type CreateReportRequest, type ResolveReportRequest, type GetReportsParams, type ReportsPageResponse } from './reportService';

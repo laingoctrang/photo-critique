@@ -1,0 +1,2 @@
+export { XPConfigManagement } from './XPConfigManagement';
+

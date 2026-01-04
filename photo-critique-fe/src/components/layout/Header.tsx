@@ -80,7 +80,7 @@ export const Header: React.FC = () => {
 
         {/* Notification and User Profile Section */}
         <div className="flex items-center gap-3 ml-auto">
-          <div className="relative">
+          {/* <div className="relative">
             <Button
               variant="ghost" 
               size="small"
@@ -89,7 +89,7 @@ export const Header: React.FC = () => {
               <BellIcon className="w-7 h-7" aria-hidden="true"/>
             </Button>
             <span className="absolute top-0 right-1 text-xs text-[#15B8A6] bg-[#E6FDF5] rounded-full w-5 h-5 flex items-center justify-center font-semibold pointer-events-none">12</span>
-          </div>
+          </div> */}
 
           {/* User Profile */}
           <div className="relative">
