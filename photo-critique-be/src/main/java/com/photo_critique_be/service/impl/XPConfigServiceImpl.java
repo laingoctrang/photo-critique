@@ -72,7 +72,7 @@ public class XPConfigServiceImpl implements XPConfigService {
             // Build criteria
             Criteria searchCriteria = FilterUtil.buildSearchCriteria(
                 filterRequest.getSearch(),
-                "event_type", "name", "description", "category"
+                "event_type", "name", "description"
             );
             Criteria filterCriteria = FilterUtil.buildFilterCriteria(filterRequest.getFilters());
             // No default filter - allow all statuses in filtered view
@@ -171,7 +171,7 @@ public class XPConfigServiceImpl implements XPConfigService {
                     .orElseThrow(() -> new ResourceNotFoundException(languageService.getMessage(MessageCode.XP_CONFIG_NOT_FOUND)));
 
             // Set status to PENDING_DEVELOPMENT instead of deleting
-            config.setStatus(XPConfigStatus.PENDING_DEVELOPMENT);
+            config.setStatus(XPConfigStatus.INACTIVE);
             xpConfigRepository.save(config);
         }
 

@@ -261,7 +261,7 @@ export function Table<T>({
               </Button>
             )}
 
-            {filters.length > 0 && (
+            {/* {filters.length > 0 && (
               <Button
                 variant="secondary"
                 size="small"
@@ -269,7 +269,7 @@ export function Table<T>({
               >
                 Filters
               </Button>
-            )}
+            )} */}
 
             {filters.map((filter) => {
               const dropdownOptions: DropdownOption[] = [

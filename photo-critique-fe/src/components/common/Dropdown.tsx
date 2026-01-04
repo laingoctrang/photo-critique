@@ -355,7 +355,7 @@ export const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
           {isOpen && (
             <div className={cn(
               "absolute z-50 w-full border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col",
-              direction === "up" ? "bottom-full mb-1 bg-white" : "top-full mt-1 bg-transparent"
+              direction === "up" ? "bottom-full mb-1 bg-white" : "top-full mt-1 bg-white"
             )}>
               {/* Search Input */}
               {searchable && (

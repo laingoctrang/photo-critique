@@ -6,9 +6,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 
 import java.util.Map;
+import java.util.Set;
 
 public class FilterUtil {
-    
+
+    private static final Set<String> NUMERIC_KEYS = Set.of(
+            "level",
+            "xp_threshold",
+            "xp_points"
+    );
     public static Pageable buildPageable(Integer page, Integer size, String sortBy, String sortDirection) {
         Sort sort = Sort.unsorted();
         if (sortBy != null && !sortBy.isEmpty()) {
@@ -41,7 +47,16 @@ public class FilterUtil {
         for (Map.Entry<String, String> entry : filters.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            if (value != null && !value.isEmpty()) {
+
+            if (value == null || value.isBlank()) continue;
+
+            if (NUMERIC_KEYS.contains(key)) {
+                try {
+                    criteria.and(key).is(Integer.parseInt(value));
+                } catch (NumberFormatException e) {
+                    // ignore invalid number or log warning
+                }
+            } else {
                 criteria.and(key).is(value);
             }
         }

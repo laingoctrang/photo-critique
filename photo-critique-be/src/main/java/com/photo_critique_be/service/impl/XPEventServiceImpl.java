@@ -74,7 +74,7 @@ public class XPEventServiceImpl implements XPEventService {
 
         } catch (Exception e) {
             log.error("Failed to award XP to user {} for {}: {}", userId, eventType, e.getMessage());
-            throw new RuntimeException("Failed to award XP", e);
+//            throw new RuntimeException("Failed to award XP", e);
         }
     }
 

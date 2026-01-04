@@ -1,10 +1,9 @@
-
-// import { BadgeManagement } from "../../features/badge/BadgeManagement";
+import { BadgeManagement } from "../../features/badge/BadgeManagement";
 
 export const BadgeManagementPage = () => {
   return (
-    <div>
-      {/* <BadgeManagement /> */}
+    <div className="p-4">
+      <BadgeManagement />
     </div>
   );
 };

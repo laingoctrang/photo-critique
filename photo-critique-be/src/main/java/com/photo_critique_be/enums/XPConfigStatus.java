@@ -4,6 +4,7 @@ public enum XPConfigStatus {
     PENDING_DEVELOPMENT,  // Chờ phát triển
     IN_DEVELOPMENT,       // Đang phát triển
     PENDING_APPROVAL,     // Chờ duyệt
-    ACTIVE                // Đang hoạt động
+    ACTIVE,                // Đang hoạt động
+    INACTIVE
 }
 
