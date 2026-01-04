@@ -202,7 +202,7 @@ public class PostServiceImpl implements PostService {
             allowedStatuses = List.of(PostStatus.POSTED);
         }
 
-        Page<Post> posts = postRepository.findByUserIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+        Page<Post> posts = postRepository.findByUserIdAndStatusInAndIsDeletedFalseOrderByCreatedAtDesc(
                 userId, allowedStatuses, pageable);
         
         // Filter by privacy if needed

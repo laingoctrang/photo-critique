@@ -16,7 +16,7 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends MongoRepository<Post, String>, PostRepositoryCustom {
     // Query by status instead of isDeleted
-    Page<Post> findByUserIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(String userId, List<PostStatus> statuses, Pageable pageable);
+    Page<Post> findByUserIdAndStatusInAndIsDeletedFalseOrderByCreatedAtDesc(String userId, List<PostStatus> statuses, Pageable pageable);
     Page<Post> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
     long countByUserId(String userId);
     long countByUserIdAndStatusIn(String userId, List<PostStatus> statuses);
