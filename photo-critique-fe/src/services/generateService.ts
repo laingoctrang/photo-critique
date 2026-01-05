@@ -99,7 +99,7 @@ export const generateService = {
       setTimeout(() => {
         clearInterval(pollInterval);
         reject(new Error("Image generation timeout"));
-      }, 5 * 60 * 1000);
+      }, 10 * 60 * 1000);
     });
   },
 };

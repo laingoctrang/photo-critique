@@ -14,6 +14,7 @@ import {
   commentService,
   type CommentResponse,
   generateService,
+  moderationService,
 } from "../../services";
 import { CommentImage } from "./CommentImage";
 import { showToast } from "../../utils";
@@ -119,6 +120,12 @@ export const CommentInput: React.FC<CommentInputProps> = ({
   const handlePostSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const contentModeration = await moderationService.moderateText(content.trim());
+      if (!contentModeration.allowed) {
+        showToast(ToastType.ERROR, "Content comment contains prohibited content", "", 5000);
+        return;
+      }
+
       if (isEditing && editingComment) {
         // Update existing comment
         const updatedComment = await commentService.updateComment(

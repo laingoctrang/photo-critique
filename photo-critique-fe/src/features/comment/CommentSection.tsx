@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { showToast } from "../../utils";
-import { commentService, type CommentResponse, type CommentSortOption, type ImageInfo } from "../../services";
+import { commentService, moderationService, type CommentResponse, type CommentSortOption, type ImageInfo } from "../../services";
 import { ToastType } from "../../components/Toast";
 import { CommentInput } from "./CommentInput";
 import { CommentItem } from "./CommentItem";
@@ -129,6 +129,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 
   const handleSubmitReply = async (content: string) => {
     if (!replyingTo) return;
+
+    const contentModeration = await moderationService.moderateText(content.trim());
+    if (!contentModeration.allowed) {
+      showToast(ToastType.ERROR, "Content comment contains prohibited content", "", 5000);
+      return;
+    }
+    
     try {
       const newComment = await commentService.createComment({
         postId,
